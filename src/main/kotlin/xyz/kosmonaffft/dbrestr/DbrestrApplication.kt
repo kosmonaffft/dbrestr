@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class DbrestrApplication
 
 fun main(args: Array<String>) {
-	runApplication<DbrestrApplication>(*args)
+    runApplication<DbrestrApplication>(*args)
 }
