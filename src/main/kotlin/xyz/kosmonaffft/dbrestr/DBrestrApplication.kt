@@ -15,9 +15,12 @@
 package xyz.kosmonaffft.dbrestr
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
+import xyz.kosmonaffft.dbrestr.configuration.ConfigurationProperties
 
 @SpringBootApplication
+@EnableConfigurationProperties(ConfigurationProperties::class)
 class DBrestrApplication
 
 fun main(args: Array<String>) {

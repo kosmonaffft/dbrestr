@@ -12,18 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package xyz.kosmonaffft.dbrestr
+package xyz.kosmonaffft.dbrestr.configuration
 
-import org.glassfish.jersey.server.ResourceConfig
-import xyz.kosmonaffft.dbrestr.rest.MetadataRestHandler
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-/**
- * @author Anton V. Kirilchik
- * @since 17.09.2019
- */
-class DbExplorerApplication : ResourceConfig() {
+@ConfigurationProperties(prefix = "dbrestr")
+class ConfigurationProperties {
 
-    init {
-        register(MetadataRestHandler::class.java)
-    }
+    lateinit var schemas: Array<String>
 }

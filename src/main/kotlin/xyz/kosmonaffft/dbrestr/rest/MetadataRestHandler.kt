@@ -16,35 +16,27 @@ package xyz.kosmonaffft.dbrestr.rest
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.core.util.Yaml
-import org.springframework.stereotype.Service
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RestController
 import xyz.kosmonaffft.dbrestr.service.MetadataService
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.PathParam
-import javax.ws.rs.Produces
-import javax.ws.rs.core.MediaType.APPLICATION_JSON
 
 /**
  * @author Anton V. Kirilchik
  * @since 10.06.2019
  */
-@Service
-@Path("/")
+@RestController
 class MetadataRestHandler(private var metadataService: MetadataService) {
 
-    @GET
-    @Path("metadata/yaml")
-    @Produces(APPLICATION_JSON)
-    fun getYamlMetadata(@PathParam("schema") schema: String): String {
-        val openAPI = metadataService.generateOpenApiV3Metadata(schema)
+    @RequestMapping(method = [RequestMethod.GET], path = ["/metadata/yaml"])
+    fun getYamlMetadata(): String {
+        val openAPI = metadataService.generateOpenApiV3Metadata()
         return Yaml.pretty(openAPI)
     }
 
-    @GET
-    @Path("metadata/json")
-    @Produces(APPLICATION_JSON)
-    fun getJsonMetadata(@PathParam("schema") schema: String): String {
-        val openAPI = metadataService.generateOpenApiV3Metadata(schema)
+    @RequestMapping(method = [RequestMethod.GET], path = ["/metadata/json"])
+    fun getJsonMetadata(): String {
+        val openAPI = metadataService.generateOpenApiV3Metadata()
         return Json.pretty(openAPI)
     }
 }
