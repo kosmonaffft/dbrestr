@@ -14,11 +14,12 @@
 
 package xyz.kosmonaffft.dbrestr.service
 
-import io.swagger.v3.oas.models.Components
-import io.swagger.v3.oas.models.OpenAPI
+import io.swagger.v3.oas.models.*
 import io.swagger.v3.oas.models.info.Info
 import io.swagger.v3.oas.models.media.*
+import io.swagger.v3.oas.models.parameters.RequestBody
 import io.swagger.v3.oas.models.responses.ApiResponse
+import io.swagger.v3.oas.models.responses.ApiResponses
 import io.swagger.v3.oas.models.servers.Server
 import org.springframework.stereotype.Service
 import xyz.kosmonaffft.dbrestr.configuration.ConfigurationProperties
@@ -34,16 +35,21 @@ import javax.sql.DataSource
 class MetadataService(private val dataSource: DataSource,
                       private val configurationProperties: ConfigurationProperties) {
 
+    data class PathsAndComponents(val paths: Paths, val components: Components)
+
     fun generateOpenApiV3Metadata(): OpenAPI = dataSource.connection.use { connection ->
+        val (paths, components) = generatePathsAndComponents(connection)
         val openAPI = OpenAPI()
                 .info(generateInfo())
                 .servers(generateServers())
-                .components(generateComponents(connection))
+                .components(components)
+                .paths(paths)
         return openAPI
     }
 
-    private fun generateComponents(connection: Connection): Components {
-        val result = Components()
+    private fun generatePathsAndComponents(connection: Connection): PathsAndComponents {
+        val components = Components()
+        val paths = Paths()
         val databaseMetadata = connection.metaData
 
         val schemaAction: (ResultSet) -> Unit = { schemasResultSet ->
@@ -53,7 +59,7 @@ class MetadataService(private val dataSource: DataSource,
                 databaseMetadata.getTables(null, schemaName, null, arrayOf("TABLE")).use { tablesResultSet ->
                     while (tablesResultSet.next()) {
                         val tableName = tablesResultSet.getString("TABLE_NAME")
-                        val fullTableName = "$schemaName/$tableName"
+                        val fullTableName = "$schemaName.$tableName"
 
                         val oaTableSchema = ObjectSchema()
                                 .name(fullTableName)
@@ -78,7 +84,7 @@ class MetadataService(private val dataSource: DataSource,
                             }
                         }
 
-                        result.addSchemas(fullTableName, oaTableSchema)
+                        components.addSchemas(fullTableName, oaTableSchema)
 
                         val oaSingleResponse = ApiResponse()
                                 .description("One record from $fullTableName table.")
@@ -89,10 +95,47 @@ class MetadataService(private val dataSource: DataSource,
                                 .description("List of records from $fullTableName table.")
                                 //.addHeaderObject(TOTAL_COUNT_HEADER_NAME, TOTAL_HEADER)
                                 .content(Content().addMediaType("application/json", MediaType().schema(ArraySchema().items(ObjectSchema().`$ref`(oaTableSchemaRef)))))
-                        val oaListResponseName = "$fullTableName/list"
+                        val oaListResponseName = "$fullTableName.list"
 
-                        result.addResponses(oaSingleResponseName, oaSingleResponse)
-                        result.addResponses(oaListResponseName, oaListResponse)
+                        components.addResponses(oaSingleResponseName, oaSingleResponse)
+                        components.addResponses(oaListResponseName, oaListResponse)
+
+                        val oaInsertRequestBody = RequestBody()
+                                .description(String.format("Insert record into %s table.", fullTableName))
+                                .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaTableSchemaRef))))
+                        val oaInsertRequestBodyName = "insert.$fullTableName"
+
+                        val oaUpdateRequestBody = RequestBody()
+                                .description(String.format("Update record from %s table.", fullTableName))
+                                .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaTableSchemaRef))))
+                        val oaUpdateRequestBodyName = "update.$fullTableName"
+
+                        components.addRequestBodies(oaInsertRequestBodyName, oaInsertRequestBody)
+                        components.addRequestBodies(oaUpdateRequestBodyName, oaUpdateRequestBody)
+
+                        val oaGetListOperationName = "list.$fullTableName"
+                        val oaGetListOperation = Operation()
+                                .operationId(oaGetListOperationName)
+//                                .addParametersItem(Parameter().`$ref`(parameterRef(PAGE_PARAMETER_NAME)))
+//                                .addParametersItem(Parameter().`$ref`(parameterRef(SIZE_PARAMETER_NAME)))
+//                                .addParametersItem(Parameter().`$ref`(parameterRef(ORDER_PARAMETER_NAME)))
+//                                .addParametersItem(Parameter().`$ref`(parameterRef(FILTER_PARAMETER_NAME)))
+                                .responses(ApiResponses()
+                                        .addApiResponse("200", ApiResponse().`$ref`("#/components/responses/$oaListResponseName"))
+                                )
+
+                        val oaInsertOperationName = "insert.$fullTableName"
+                        val oaInsertOperation = Operation()
+                                .operationId(oaInsertOperationName)
+                                .requestBody(RequestBody().`$ref`("#/components/requestBodies/$oaInsertRequestBodyName"))
+                                .responses(ApiResponses()
+                                        .addApiResponse("200", ApiResponse().`$ref`("#/components/responses/$oaSingleResponseName"))
+                                )
+
+                        val oaListPathItem = PathItem()
+                                .get(oaGetListOperation)
+                                .post(oaInsertOperation)
+                        paths.addPathItem("/$fullTableName", oaListPathItem)
                     }
                 }
             }
@@ -106,7 +149,7 @@ class MetadataService(private val dataSource: DataSource,
             }
         }
 
-        return result
+        return PathsAndComponents(paths, components)
     }
 
     private fun generateServers(): List<Server> {
