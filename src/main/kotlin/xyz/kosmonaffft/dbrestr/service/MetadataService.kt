@@ -17,8 +17,8 @@ package xyz.kosmonaffft.dbrestr.service
 import io.swagger.v3.oas.models.Components
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Info
-import io.swagger.v3.oas.models.media.ObjectSchema
-import io.swagger.v3.oas.models.media.Schema
+import io.swagger.v3.oas.models.media.*
+import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.servers.Server
 import org.springframework.stereotype.Service
 import xyz.kosmonaffft.dbrestr.configuration.ConfigurationProperties
@@ -53,10 +53,11 @@ class MetadataService(private val dataSource: DataSource,
                 databaseMetadata.getTables(null, schemaName, null, arrayOf("TABLE")).use { tablesResultSet ->
                     while (tablesResultSet.next()) {
                         val tableName = tablesResultSet.getString("TABLE_NAME")
-                        val fullTableName = "${schemaName}/${tableName}"
+                        val fullTableName = "$schemaName/$tableName"
 
                         val oaTableSchema = ObjectSchema()
                                 .name(fullTableName)
+                        val oaTableSchemaRef = "#/components/schemas/$fullTableName"
 
                         databaseMetadata.getColumns(null, schemaName, tableName, null).use { columnsResultSet ->
                             while (columnsResultSet.next()) {
@@ -78,6 +79,20 @@ class MetadataService(private val dataSource: DataSource,
                         }
 
                         result.addSchemas(fullTableName, oaTableSchema)
+
+                        val oaSingleResponse = ApiResponse()
+                                .description("One record from $fullTableName table.")
+                                .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaTableSchemaRef))))
+                        val oaSingleResponseName = fullTableName
+
+                        val oaListResponse = ApiResponse()
+                                .description("List of records from $fullTableName table.")
+                                //.addHeaderObject(TOTAL_COUNT_HEADER_NAME, TOTAL_HEADER)
+                                .content(Content().addMediaType("application/json", MediaType().schema(ArraySchema().items(ObjectSchema().`$ref`(oaTableSchemaRef)))))
+                        val oaListResponseName = "$fullTableName/list"
+
+                        result.addResponses(oaSingleResponseName, oaSingleResponse)
+                        result.addResponses(oaListResponseName, oaListResponse)
                     }
                 }
             }
