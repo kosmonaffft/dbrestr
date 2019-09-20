@@ -27,6 +27,9 @@ import java.sql.Connection
 import java.sql.ResultSet
 import javax.sql.DataSource
 
+private val DELETE_RESPONSE_NAME = "delete_response"
+private val DELETE_RESPONSE_REF = "#/components/responses/$DELETE_RESPONSE_NAME"
+
 /**
  * @author Anton V. Kirilchik
  * @since 17.09.2019
@@ -51,6 +54,16 @@ class MetadataService(private val dataSource: DataSource,
         val components = Components()
         val paths = Paths()
         val databaseMetadata = connection.metaData
+
+        val deleteResponse = ApiResponse()
+                .description("Response after successffull deletion.")
+                .content(
+                        Content()
+                                .addMediaType("application/json", MediaType()
+                                        .schema(StringSchema())
+                                )
+                )
+        components.addResponses(DELETE_RESPONSE_NAME, deleteResponse)
 
         val schemaAction: (ResultSet) -> Unit = { schemasResultSet ->
             while (schemasResultSet.next()) {
@@ -136,6 +149,34 @@ class MetadataService(private val dataSource: DataSource,
                                 .get(oaGetListOperation)
                                 .post(oaInsertOperation)
                         paths.addPathItem("/$fullTableName", oaListPathItem)
+
+                        val primaryKeysMetadata = HashMap<Short, String>()
+                        databaseMetadata.getPrimaryKeys(null, schemaName, tableName).use { primaryKeysResultSet ->
+                            while (primaryKeysResultSet.next()) {
+                                val keySeq = primaryKeysResultSet.getShort("KEY_SEQ")
+                                val columnName = primaryKeysResultSet.getString("COLUMN_NAME")
+                                primaryKeysMetadata[keySeq] = columnName
+                            }
+                        }
+
+                        if (primaryKeysMetadata.size > 0) {
+                            val oaGetSingleOperation = Operation()
+                                    .operationId("get.$fullTableName")
+                                    .responses(ApiResponses()
+                                            .addApiResponse("200", ApiResponse().`$ref`("#/components/responses/$oaSingleResponseName"))
+                                    )
+                            val oaUpdateOperation = Operation()
+                                    .operationId("update.$fullTableName")
+                                    .requestBody(RequestBody().`$ref`("#/components/requestBodies/$oaInsertRequestBodyName"))
+                                    .responses(ApiResponses()
+                                            .addApiResponse("200", ApiResponse().`$ref`("#/components/responses/$oaSingleResponseName"))
+                                    )
+                            val oaDeleteOperation = Operation()
+                                    .operationId("delete.$fullTableName")
+                                    .responses(ApiResponses()
+                                            .addApiResponse("200", ApiResponse().`$ref`(DELETE_RESPONSE_REF))
+                                    )
+                        }
                     }
                 }
             }
