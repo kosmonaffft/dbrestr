@@ -34,7 +34,7 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
     data class PathsAndComponents(val paths: Paths, val components: Components)
 
     fun generateOpenApiV3Metadata(): OpenAPI {
-        val databaseMetadata = databaseMetadataService.generateDatabaseMetadata()
+        val databaseMetadata = databaseMetadataService.getDatabaseMetadata()
         val (paths, components) = generatePathsAndComponents(databaseMetadata)
         val openAPI = OpenAPI()
                 .info(generateInfo())
@@ -144,12 +144,12 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
 }
 
 fun jdbcToOpenApiType(jdbcType: String): String {
-    return when (jdbcType) {
-        "text", "bytea", "varchar", "date", "timestamp", "timestamptz", "json", "jsonb", "uuid" -> "string"
+    return when (jdbcType.toLowerCase()) {
+        "text", "bytea", "varchar", "binary", "date", "timestamp", "timestamptz", "json", "jsonb", "uuid" -> "string"
 
-        "int4", "int8", "serial", "bigserial" -> "integer"
+        "int4", "int8", "integer", "bigint", "serial", "bigserial" -> "integer"
 
-        "float4", "float8" -> "number"
+        "float4", "float8", "double" -> "number"
 
         "bool" -> "boolean"
 
@@ -158,16 +158,16 @@ fun jdbcToOpenApiType(jdbcType: String): String {
 }
 
 fun jdbcToOpenApiFormat(jdbcType: String): String? {
-    return when (jdbcType) {
-        "int4", "serial" -> "int32"
+    return when (jdbcType.toLowerCase()) {
+        "int4", "serial", "int" -> "int32"
 
-        "int8", "bigserial" -> "int64"
+        "int8", "bigserial", "bigint" -> "int64"
 
         "float4" -> "float"
 
-        "float8" -> "double"
+        "float8", "double" -> "double"
 
-        "bytea" -> "binary"
+        "bytea", "binary" -> "binary"
 
         "date" -> "date"
 

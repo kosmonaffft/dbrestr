@@ -14,6 +14,10 @@
 
 package xyz.kosmonaffft.dbrestr.service
 
+import com.google.common.base.Supplier
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import org.springframework.stereotype.Service
 import xyz.kosmonaffft.dbrestr.configuration.ConfigurationProperties
 import xyz.kosmonaffft.dbrestr.metadata.ColumnMetadata
@@ -22,6 +26,8 @@ import xyz.kosmonaffft.dbrestr.metadata.SchemaMetadata
 import xyz.kosmonaffft.dbrestr.metadata.TableMetadata
 import java.sql.Connection
 import java.sql.JDBCType
+import java.time.Duration
+import java.time.temporal.ChronoUnit
 import java.util.*
 import javax.sql.DataSource
 import kotlin.collections.HashMap
@@ -34,7 +40,15 @@ import kotlin.collections.HashMap
 class DatabaseMetadataService(private val dataSource: DataSource,
                               private val configurationProperties: ConfigurationProperties) {
 
-    fun generateDatabaseMetadata(): DatabaseMetadata {
+    private val metadataCache: LoadingCache<String, DatabaseMetadata> = CacheBuilder.newBuilder()
+            .expireAfterAccess(Duration.of(1, ChronoUnit.HOURS))
+            .build(CacheLoader.from(Supplier { this.generateDatabaseMetadata() }))
+
+    fun getDatabaseMetadata(): DatabaseMetadata {
+        return metadataCache["metadata"];
+    }
+
+    private fun generateDatabaseMetadata(): DatabaseMetadata {
         val result = DatabaseMetadata()
         val schemas = if (configurationProperties.schemas.isEmpty()) {
             arrayOf<String?>(null)
