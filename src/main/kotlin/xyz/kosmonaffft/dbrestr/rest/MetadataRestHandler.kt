@@ -19,24 +19,24 @@ import io.swagger.v3.core.util.Yaml
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RestController
-import xyz.kosmonaffft.dbrestr.service.MetadataService
+import xyz.kosmonaffft.dbrestr.service.OpenAPIMetadataService
 
 /**
  * @author Anton V. Kirilchik
  * @since 10.06.2019
  */
 @RestController
-class MetadataRestHandler(private var metadataService: MetadataService) {
+class MetadataRestHandler(private var openaMetadataService: OpenAPIMetadataService) {
 
     @RequestMapping(method = [RequestMethod.GET], path = ["/metadata/yaml"])
     fun getYamlMetadata(): String {
-        val openAPI = metadataService.generateOpenApiV3Metadata()
+        val openAPI = openaMetadataService.generateOpenApiV3Metadata()
         return Yaml.pretty(openAPI)
     }
 
     @RequestMapping(method = [RequestMethod.GET], path = ["/metadata/json"])
     fun getJsonMetadata(): String {
-        val openAPI = metadataService.generateOpenApiV3Metadata()
+        val openAPI = openaMetadataService.generateOpenApiV3Metadata()
         return Json.pretty(openAPI)
     }
 }
