@@ -2,12 +2,11 @@ package xyz.kosmonaffft.dbrestr.service
 
 import com.opentable.db.postgres.embedded.FlywayPreparer
 import com.opentable.db.postgres.junit.EmbeddedPostgresRules
-import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
 import xyz.kosmonaffft.dbrestr.configuration.ConfigurationProperties
 
-class DatabaseMetadataServiceTest {
+class OpenAPIMetadataServiceTest {
 
     @Rule
     @JvmField
@@ -15,15 +14,14 @@ class DatabaseMetadataServiceTest {
             FlywayPreparer.forClasspathLocation("migrations"))
 
     @Test
-    fun getDatabaseMetadata() {
+    fun generateOpenApiV3Metadata() {
         val props = ConfigurationProperties().apply {
             schemas = arrayOf("public")
         }
 
         val metadataService = DatabaseMetadataService(db.testDatabase, props)
-        val metadata = metadataService.getDatabaseMetadata()
+        val openApiService = OpenAPIMetadataService(metadataService)
 
-        Assert.assertTrue(metadata.size == 1)
-        Assert.assertTrue(metadata.containsKey("public"))
+        val metadata = openApiService.generateOpenApiV3Metadata()
     }
 }

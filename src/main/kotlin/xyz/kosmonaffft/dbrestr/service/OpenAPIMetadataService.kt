@@ -143,7 +143,7 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
     }
 }
 
-fun jdbcToOpenApiType(jdbcType: String): String {
+private fun jdbcToOpenApiType(jdbcType: String): String {
     return when (jdbcType.toLowerCase()) {
         "text", "bytea", "varchar", "binary", "date", "timestamp", "timestamptz", "json", "jsonb", "uuid" -> "string"
 
@@ -157,7 +157,7 @@ fun jdbcToOpenApiType(jdbcType: String): String {
     }
 }
 
-fun jdbcToOpenApiFormat(jdbcType: String): String? {
+private fun jdbcToOpenApiFormat(jdbcType: String): String? {
     return when (jdbcType.toLowerCase()) {
         "int4", "serial", "int" -> "int32"
 
