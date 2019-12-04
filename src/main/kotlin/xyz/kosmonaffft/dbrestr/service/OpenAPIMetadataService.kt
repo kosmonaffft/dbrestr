@@ -15,14 +15,18 @@
 package xyz.kosmonaffft.dbrestr.service
 
 import io.swagger.v3.oas.models.*
+import io.swagger.v3.oas.models.headers.Header
 import io.swagger.v3.oas.models.info.Info
 import io.swagger.v3.oas.models.media.*
+import io.swagger.v3.oas.models.parameters.Parameter
+import io.swagger.v3.oas.models.parameters.QueryParameter
 import io.swagger.v3.oas.models.parameters.RequestBody
 import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.responses.ApiResponses
 import io.swagger.v3.oas.models.servers.Server
 import org.springframework.stereotype.Service
 import xyz.kosmonaffft.dbrestr.metadata.DatabaseMetadata
+import java.util.stream.Collectors
 
 /**
  * @author Anton V. Kirilchik
@@ -48,12 +52,28 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
         val components = Components()
         val paths = Paths()
 
+        components.addHeaders("totalHeader", Header().schema(IntegerSchema().format("int64")))
+
+        val pageParameterName = "page"
+        val pageSizeParameterName = "size"
+
+        components.addParameters(pageSizeParameterName,
+                QueryParameter()
+                        .required(false)
+                        .schema(IntegerSchema().format("int64")))
+
+        components.addParameters(pageParameterName,
+                QueryParameter()
+                        .required(false)
+                        .schema(IntegerSchema().format("int64")))
+
         databaseMetadata.keys.forEach { schemaName ->
             val schemaMetadata = databaseMetadata[schemaName]!!
 
             schemaMetadata.keys.forEach { tableName ->
                 val tableMetadata = schemaMetadata[tableName]!!
                 val fullTableName = "$schemaName.$tableName"
+                val fullTablePath = "$schemaName/$tableName"
 
                 val oaTableSchema = ObjectSchema()
                         .name(fullTableName)
@@ -82,7 +102,7 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
 
                 val oaListResponse = ApiResponse()
                         .description("List of records from $fullTableName table.")
-                        //.addHeaderObject(TOTAL_COUNT_HEADER_NAME, TOTAL_HEADER)
+                        .addHeaderObject("X-Total", Header().`$ref`("totalHeader"))
                         .content(Content().addMediaType("application/json", MediaType().schema(ArraySchema().items(ObjectSchema().`$ref`(oaTableSchemaRef)))))
                 val oaListResponseName = "$fullTableName.list"
 
@@ -105,8 +125,8 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                 val oaGetListOperationName = "list.$fullTableName"
                 val oaGetListOperation = Operation()
                         .operationId(oaGetListOperationName)
-//                                .addParametersItem(Parameter().`$ref`(parameterRef(PAGE_PARAMETER_NAME)))
-//                                .addParametersItem(Parameter().`$ref`(parameterRef(SIZE_PARAMETER_NAME)))
+                        .addParametersItem(Parameter().`$ref`(pageSizeParameterName))
+                        .addParametersItem(Parameter().`$ref`(pageParameterName))
 //                                .addParametersItem(Parameter().`$ref`(parameterRef(ORDER_PARAMETER_NAME)))
 //                                .addParametersItem(Parameter().`$ref`(parameterRef(FILTER_PARAMETER_NAME)))
                         .responses(ApiResponses()
@@ -121,10 +141,40 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                                 .addApiResponse("200", ApiResponse().`$ref`("#/components/responses/$oaSingleResponseName"))
                         )
 
+                val listPath = "/$fullTablePath"
+
                 val oaListPathItem = PathItem()
                         .get(oaGetListOperation)
                         .post(oaInsertOperation)
-                paths.addPathItem("/$fullTableName", oaListPathItem)
+
+                paths.addPathItem(listPath, oaListPathItem)
+
+                val oaGetOneOperationName = "getOne.$fullTableName"
+                val oaGetSingleOperation = Operation()
+                        .operationId(oaGetOneOperationName)
+                        .responses(ApiResponses()
+                                .addApiResponse("200", ApiResponse().`$ref`("#/components/responses/$oaSingleResponseName"))
+                        )
+
+                val oaUpdateOperationName = "update.$fullTableName"
+                val oaUpdateOperation = Operation()
+                        .operationId(oaUpdateOperationName)
+                        .requestBody(RequestBody().`$ref`("#/components/requestBodies/$oaUpdateRequestBodyName"))
+                        .responses(ApiResponses()
+                                .addApiResponse("200", ApiResponse().`$ref`("#/components/responses/$oaSingleResponseName"))
+                        )
+
+                val keysPathPart = tableMetadata.primaryKeys
+                        .stream()
+                        .map { "{${it.name}}" }
+                        .collect(Collectors.joining(", "))
+                val singlePath = "/$fullTablePath($keysPathPart)"
+
+                val oaSinglePathItem = PathItem()
+                        .get(oaGetSingleOperation)
+                        .put(oaUpdateOperation)
+
+                paths.addPathItem(singlePath, oaSinglePathItem)
             }
         }
 
