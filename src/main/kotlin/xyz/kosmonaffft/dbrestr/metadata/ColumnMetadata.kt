@@ -20,7 +20,7 @@ import java.sql.JDBCType
  * @author Anton V. Kirilchik
  * @since 27.09.2019
  */
-class ColumnMetadata(
+data class ColumnMetadata(
         val name: String,
         val jdbcType: JDBCType,
         val nullable: Boolean
