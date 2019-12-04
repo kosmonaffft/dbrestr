@@ -19,6 +19,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
 import xyz.kosmonaffft.dbrestr.configuration.ConfigurationProperties
 
+/**
+ * @author Anton V. Kirilchik
+ * @since 17.09.2019
+ */
 @SpringBootApplication
 @EnableConfigurationProperties(ConfigurationProperties::class)
 class DBrestrApplication
