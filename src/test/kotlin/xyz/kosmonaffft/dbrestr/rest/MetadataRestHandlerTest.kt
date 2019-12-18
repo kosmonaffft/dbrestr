@@ -12,15 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package xyz.kosmonaffft.dbrestr.service
+package xyz.kosmonaffft.dbrestr.rest
 
 import com.opentable.db.postgres.embedded.FlywayPreparer
 import com.opentable.db.postgres.junit.EmbeddedPostgresRules
 import org.junit.Rule
 import org.junit.Test
 import xyz.kosmonaffft.dbrestr.configuration.ConfigurationProperties
+import xyz.kosmonaffft.dbrestr.service.DatabaseMetadataService
+import xyz.kosmonaffft.dbrestr.service.OpenAPIMetadataService
 
-class OpenAPIMetadataServiceTest {
+class MetadataRestHandlerTest {
 
     @Rule
     @JvmField
@@ -28,7 +30,7 @@ class OpenAPIMetadataServiceTest {
             FlywayPreparer.forClasspathLocation("migrations"))
 
     @Test
-    fun generateOpenApiV3Metadata() {
+    fun getYamlMetadata() {
         val props = ConfigurationProperties().apply {
             schemas = arrayOf("public")
         }
@@ -36,6 +38,12 @@ class OpenAPIMetadataServiceTest {
         val metadataService = DatabaseMetadataService(db.testDatabase, props)
         val openApiService = OpenAPIMetadataService(metadataService)
 
-        val metadata = openApiService.generateOpenApiV3Metadata()
+        val restHandler = MetadataRestHandler(openApiService)
+
+        val yaml = restHandler.getYamlMetadata()
+    }
+
+    @Test
+    fun getJsonMetadata() {
     }
 }
