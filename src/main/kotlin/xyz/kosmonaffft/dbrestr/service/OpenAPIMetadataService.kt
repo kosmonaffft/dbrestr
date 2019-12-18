@@ -67,6 +67,19 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                         .required(false)
                         .schema(IntegerSchema().format("int64")))
 
+        val oaErrorSchemaName = "error"
+        val oaErrorSchema = ObjectSchema()
+                .addProperties("message", StringSchema())
+
+        val oaErrorResponseName = "error"
+        val oaErrorResponse = ApiResponse()
+                .description("Error response.")
+                .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaErrorSchemaName))))
+
+        components.addSchemas(oaErrorSchemaName, oaErrorSchema)
+
+        components.addResponses(oaErrorResponseName, oaErrorResponse)
+
         databaseMetadata.keys.forEach { schemaName ->
             val schemaMetadata = databaseMetadata[schemaName]!!
 
@@ -96,12 +109,12 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                 components.addSchemas(fullTableName, oaTableSchema)
 
                 val oaSingleResponse = ApiResponse()
-                        .description("One record from $fullTableName table.")
+                        .description("One record from '$fullTableName' table.")
                         .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaTableSchemaRef))))
                 val oaSingleResponseName = fullTableName
 
                 val oaListResponse = ApiResponse()
-                        .description("List of records from $fullTableName table.")
+                        .description("List of records from '$fullTableName' table.")
                         .addHeaderObject("X-Total", Header().`$ref`("totalHeader"))
                         .content(Content().addMediaType("application/json", MediaType().schema(ArraySchema().items(ObjectSchema().`$ref`(oaTableSchemaRef)))))
                 val oaListResponseName = "$fullTableName.list"
@@ -110,12 +123,12 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                 components.addResponses(oaListResponseName, oaListResponse)
 
                 val oaInsertRequestBody = RequestBody()
-                        .description(String.format("Insert record into %s table.", fullTableName))
+                        .description("Insert record into '$fullTableName' table.")
                         .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaTableSchemaRef))))
                 val oaInsertRequestBodyName = "insert.$fullTableName"
 
                 val oaUpdateRequestBody = RequestBody()
-                        .description(String.format("Update record from %s table.", fullTableName))
+                        .description("Update record in '$fullTableName' table.")
                         .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaTableSchemaRef))))
                 val oaUpdateRequestBodyName = "update.$fullTableName"
 
@@ -131,6 +144,7 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
 //                                .addParametersItem(Parameter().`$ref`(parameterRef(FILTER_PARAMETER_NAME)))
                         .responses(ApiResponses()
                                 .addApiResponse("200", ApiResponse().`$ref`("#/components/responses/$oaListResponseName"))
+                                .addApiResponse("500", ApiResponse().`$ref`(oaErrorResponseName))
                         )
 
                 val oaInsertOperationName = "insert.$fullTableName"
@@ -139,6 +153,7 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                         .requestBody(RequestBody().`$ref`("#/components/requestBodies/$oaInsertRequestBodyName"))
                         .responses(ApiResponses()
                                 .addApiResponse("200", ApiResponse().`$ref`("#/components/responses/$oaSingleResponseName"))
+                                .addApiResponse("500", ApiResponse().`$ref`(oaErrorResponseName))
                         )
 
                 val listPath = "/$fullTablePath"
@@ -154,6 +169,7 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                         .operationId(oaGetOneOperationName)
                         .responses(ApiResponses()
                                 .addApiResponse("200", ApiResponse().`$ref`("#/components/responses/$oaSingleResponseName"))
+                                .addApiResponse("500", ApiResponse().`$ref`(oaErrorResponseName))
                         )
 
                 val oaUpdateOperationName = "update.$fullTableName"
@@ -162,6 +178,15 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                         .requestBody(RequestBody().`$ref`("#/components/requestBodies/$oaUpdateRequestBodyName"))
                         .responses(ApiResponses()
                                 .addApiResponse("200", ApiResponse().`$ref`("#/components/responses/$oaSingleResponseName"))
+                                .addApiResponse("500", ApiResponse().`$ref`(oaErrorResponseName))
+                        )
+
+                val oaDeleteOperationName = "delete.$fullTableName"
+                val oaDeleteOperation = Operation()
+                        .operationId(oaDeleteOperationName)
+                        .responses(ApiResponses()
+                                .addApiResponse("204", ApiResponse())
+                                .addApiResponse("500", ApiResponse().`$ref`(oaErrorResponseName))
                         )
 
                 val keysPathPart = tableMetadata.primaryKeys
@@ -173,6 +198,7 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                 val oaSinglePathItem = PathItem()
                         .get(oaGetSingleOperation)
                         .put(oaUpdateOperation)
+                        .delete(oaDeleteOperation)
 
                 paths.addPathItem(singlePath, oaSinglePathItem)
             }
