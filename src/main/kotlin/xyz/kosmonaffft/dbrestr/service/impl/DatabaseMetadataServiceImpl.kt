@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package xyz.kosmonaffft.dbrestr.service
+package xyz.kosmonaffft.dbrestr.service.impl
 
 import com.google.common.base.Supplier
 import com.google.common.cache.CacheBuilder
@@ -24,6 +24,7 @@ import xyz.kosmonaffft.dbrestr.metadata.ColumnMetadata
 import xyz.kosmonaffft.dbrestr.metadata.DatabaseMetadata
 import xyz.kosmonaffft.dbrestr.metadata.SchemaMetadata
 import xyz.kosmonaffft.dbrestr.metadata.TableMetadata
+import xyz.kosmonaffft.dbrestr.service.api.DatabaseMetadataService
 import java.sql.Connection
 import java.sql.JDBCType
 import java.time.Duration
@@ -37,14 +38,14 @@ import kotlin.collections.HashMap
  * @since 17.09.2019
  */
 @Service
-class DatabaseMetadataService(private val dataSource: DataSource,
-                              private val configurationProperties: ConfigurationProperties) {
+class DatabaseMetadataServiceImpl(private val dataSource: DataSource,
+                                  private val configurationProperties: ConfigurationProperties) : DatabaseMetadataService {
 
     private val metadataCache: LoadingCache<String, DatabaseMetadata> = CacheBuilder.newBuilder()
             .expireAfterAccess(Duration.of(1, ChronoUnit.HOURS))
             .build(CacheLoader.from(Supplier { this.generateDatabaseMetadata() }))
 
-    fun getDatabaseMetadata(): DatabaseMetadata {
+    override fun getDatabaseMetadata(): DatabaseMetadata {
         return metadataCache["metadata"];
     }
 

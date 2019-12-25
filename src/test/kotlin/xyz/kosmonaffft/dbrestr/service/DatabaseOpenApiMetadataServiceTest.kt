@@ -20,8 +20,9 @@ import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
 import xyz.kosmonaffft.dbrestr.configuration.ConfigurationProperties
+import xyz.kosmonaffft.dbrestr.service.impl.DatabaseMetadataServiceImpl
 
-class DatabaseMetadataServiceTest {
+class DatabaseOpenApiMetadataServiceTest {
 
     @Rule
     @JvmField
@@ -34,7 +35,7 @@ class DatabaseMetadataServiceTest {
             schemas = arrayOf("public")
         }
 
-        val metadataService = DatabaseMetadataService(db.testDatabase, props)
+        val metadataService = DatabaseMetadataServiceImpl(db.testDatabase, props)
         val metadata = metadataService.getDatabaseMetadata()
 
         Assert.assertTrue(metadata.size == 1)

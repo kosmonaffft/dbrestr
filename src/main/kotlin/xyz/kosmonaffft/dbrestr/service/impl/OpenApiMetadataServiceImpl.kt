@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package xyz.kosmonaffft.dbrestr.service
+package xyz.kosmonaffft.dbrestr.service.impl
 
 import io.swagger.v3.oas.models.*
 import io.swagger.v3.oas.models.headers.Header
@@ -27,6 +27,10 @@ import io.swagger.v3.oas.models.responses.ApiResponses
 import io.swagger.v3.oas.models.servers.Server
 import org.springframework.stereotype.Service
 import xyz.kosmonaffft.dbrestr.metadata.DatabaseMetadata
+import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService
+import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.PAGE_PARAMETER_NAME
+import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.PAGE_SIZE_PARAMETER_NAME
+import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.TOTAL_HEADER_NAME
 import java.util.stream.Collectors
 
 /**
@@ -34,11 +38,9 @@ import java.util.stream.Collectors
  * @since 17.09.2019
  */
 @Service
-class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetadataService) {
+class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMetadataServiceImpl) : OpenApiMetadataService {
 
-    data class PathsAndComponents(val paths: Paths, val components: Components)
-
-    fun generateOpenApiV3Metadata(): OpenAPI {
+    override fun generateOpenApiV3Metadata(): OpenAPI {
         val databaseMetadata = databaseMetadataService.getDatabaseMetadata()
         val (paths, components) = generatePathsAndComponents(databaseMetadata)
         val openAPI = OpenAPI()
@@ -53,17 +55,15 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
         val components = Components()
         val paths = Paths()
 
-        components.addHeaders("totalHeader", Header().schema(IntegerSchema().format("int64")))
+        val oaTotalHeaderName = "totalHeader"
+        components.addHeaders(oaTotalHeaderName, Header().schema(IntegerSchema().format("int64")))
 
-        val pageParameterName = "page"
-        val pageSizeParameterName = "size"
-
-        components.addParameters(pageSizeParameterName,
+        components.addParameters(PAGE_SIZE_PARAMETER_NAME,
                 QueryParameter()
                         .required(false)
                         .schema(IntegerSchema().format("int64")))
 
-        components.addParameters(pageParameterName,
+        components.addParameters(PAGE_PARAMETER_NAME,
                 QueryParameter()
                         .required(false)
                         .schema(IntegerSchema().format("int64")))
@@ -116,7 +116,7 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
 
                 val oaListResponse = ApiResponse()
                         .description("List of records from '$fullTableName' table.")
-                        .addHeaderObject("X-Total", Header().`$ref`("totalHeader"))
+                        .addHeaderObject(TOTAL_HEADER_NAME, Header().`$ref`(oaTotalHeaderName))
                         .content(Content().addMediaType("application/json", MediaType().schema(ArraySchema().items(ObjectSchema().`$ref`(oaTableSchemaRef)))))
                 val oaListResponseName = "$fullTableName.list"
 
@@ -139,8 +139,8 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                 val oaGetListOperationName = "list.$fullTableName"
                 val oaGetListOperation = Operation()
                         .operationId(oaGetListOperationName)
-                        .addParametersItem(Parameter().`$ref`(pageSizeParameterName))
-                        .addParametersItem(Parameter().`$ref`(pageParameterName))
+                        .addParametersItem(Parameter().`$ref`(PAGE_SIZE_PARAMETER_NAME))
+                        .addParametersItem(Parameter().`$ref`(PAGE_PARAMETER_NAME))
 //                                .addParametersItem(Parameter().`$ref`(parameterRef(ORDER_PARAMETER_NAME)))
 //                                .addParametersItem(Parameter().`$ref`(parameterRef(FILTER_PARAMETER_NAME)))
                         .responses(ApiResponses()
@@ -157,7 +157,7 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                                 .addApiResponse("500", ApiResponse().`$ref`(oaErrorResponseName))
                         )
 
-                val listPath = "/$fullTablePath"
+                val listPath = "/data/$fullTablePath"
 
                 val oaListPathItem = PathItem()
                         .get(oaGetListOperation)
@@ -209,7 +209,8 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                     oaDeleteOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
                     keysPathPart.add("{${pk.name}}")
                 }
-                val singlePath = "/$fullTablePath(${keysPathPart.stream().collect(Collectors.joining(", "))})"
+                val keyParamString = keysPathPart.stream().collect(Collectors.joining(", "))
+                val singlePath = "/data/$fullTablePath($keyParamString)"
 
                 val oaSinglePathItem = PathItem()
                         .get(oaGetSingleOperation)
@@ -233,6 +234,8 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                 .title("dbrestr")
                 .version("1.0.0")
     }
+
+    private data class PathsAndComponents(val paths: Paths, val components: Components)
 }
 
 private fun jdbcToOpenApiType(jdbcType: String): String {

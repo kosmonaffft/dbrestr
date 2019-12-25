@@ -19,8 +19,8 @@ import com.opentable.db.postgres.junit.EmbeddedPostgresRules
 import org.junit.Rule
 import org.junit.Test
 import xyz.kosmonaffft.dbrestr.configuration.ConfigurationProperties
-import xyz.kosmonaffft.dbrestr.service.DatabaseMetadataService
-import xyz.kosmonaffft.dbrestr.service.OpenAPIMetadataService
+import xyz.kosmonaffft.dbrestr.service.impl.DatabaseMetadataServiceImpl
+import xyz.kosmonaffft.dbrestr.service.impl.OpenApiMetadataServiceImpl
 
 class MetadataRestHandlerTest {
 
@@ -35,8 +35,8 @@ class MetadataRestHandlerTest {
             schemas = arrayOf("public")
         }
 
-        val metadataService = DatabaseMetadataService(db.testDatabase, props)
-        val openApiService = OpenAPIMetadataService(metadataService)
+        val metadataService = DatabaseMetadataServiceImpl(db.testDatabase, props)
+        val openApiService = OpenApiMetadataServiceImpl(metadataService)
 
         val restHandler = MetadataRestHandler(openApiService)
 

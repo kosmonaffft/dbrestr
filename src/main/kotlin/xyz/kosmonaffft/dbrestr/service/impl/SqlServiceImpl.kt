@@ -12,24 +12,23 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package xyz.kosmonaffft.dbrestr.service
+package xyz.kosmonaffft.dbrestr.service.impl
 
 import org.springframework.stereotype.Service
 import xyz.kosmonaffft.dbrestr.metadata.DatabaseMetadata
+import xyz.kosmonaffft.dbrestr.service.api.SqlService
 import java.lang.String.join
 import java.util.Collections.nCopies
 import java.util.stream.Collectors
-
-private fun joiningCollector() = Collectors.joining(", ")
 
 /**
  * @author Anton V. Kirilchik
  * @since 20.12.2019
  */
 @Service
-class SqlService {
+class SqlServiceImpl : SqlService {
 
-    fun selectMany(schema: String, table: String, offset: Long, limit: Long): String {
+    override fun selectMany(schema: String, table: String, offset: Long, limit: Long): String {
         val sql = StringBuilder()
                 .append("SELECT * FROM ")
                 .append(schema)
@@ -44,7 +43,7 @@ class SqlService {
         return sql.toString()
     }
 
-    fun count(schema: String, table: String): String {
+    override fun count(schema: String, table: String): String {
         val sql = StringBuilder()
                 .append("SELECT count(*) FROM ")
                 .append(schema)
@@ -55,7 +54,7 @@ class SqlService {
         return sql.toString()
     }
 
-    fun selectOne(schema: String, table: String, idColumns: List<String>): String {
+    override fun selectOne(schema: String, table: String, idColumns: List<String>): String {
         val where = idColumns.stream()
                 .map { "$it = ?" }
                 .collect(joiningCollector())
@@ -63,7 +62,7 @@ class SqlService {
         return "SELECT * FROM $schema.$table WHERE $where;"
     }
 
-    fun insert(schema: String, table: String, databaseMetadata: DatabaseMetadata, actualColumns: Set<String>): String {
+    override fun insert(schema: String, table: String, databaseMetadata: DatabaseMetadata, actualColumns: Set<String>): String {
         val columnsList = databaseMetadata[schema]!![table]!!.allColumns.stream()
                 .map { it.name }
                 .filter { actualColumns.contains(it) }
@@ -73,7 +72,7 @@ class SqlService {
         return "INSERT INTO $schema.$table ($columnsList) VALUES ($valuesList);"
     }
 
-    fun update(schema: String, table: String, idColumns: List<String>, databaseMetadata: DatabaseMetadata, actualColumns: Set<String>): String {
+    override fun update(schema: String, table: String, idColumns: List<String>, databaseMetadata: DatabaseMetadata, actualColumns: Set<String>): String {
         val set = databaseMetadata[schema]!![table]!!.allColumns.stream()
                 .map { it.name }
                 .filter { actualColumns.contains(it) }
@@ -87,7 +86,7 @@ class SqlService {
         return "UPDATE $schema.$table SET $set WHERE $where;"
     }
 
-    fun delete(schema: String, table: String, idColumns: List<String>): String {
+    override fun delete(schema: String, table: String, idColumns: List<String>): String {
         val where = idColumns.stream()
                 .map { "$it = ?" }
                 .collect(joiningCollector())
@@ -95,3 +94,5 @@ class SqlService {
         return "DELETE FROM $schema.$table WHERE $where;"
     }
 }
+
+private fun joiningCollector() = Collectors.joining(", ")
