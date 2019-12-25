@@ -19,6 +19,7 @@ import io.swagger.v3.oas.models.headers.Header
 import io.swagger.v3.oas.models.info.Info
 import io.swagger.v3.oas.models.media.*
 import io.swagger.v3.oas.models.parameters.Parameter
+import io.swagger.v3.oas.models.parameters.PathParameter
 import io.swagger.v3.oas.models.parameters.QueryParameter
 import io.swagger.v3.oas.models.parameters.RequestBody
 import io.swagger.v3.oas.models.responses.ApiResponse
@@ -189,11 +190,26 @@ class OpenAPIMetadataService(private val databaseMetadataService: DatabaseMetada
                                 .addApiResponse("500", ApiResponse().`$ref`(oaErrorResponseName))
                         )
 
-                val keysPathPart = tableMetadata.primaryKeys
-                        .stream()
-                        .map { "{${it.name}}" }
-                        .collect(Collectors.joining(", "))
-                val singlePath = "/$fullTablePath($keysPathPart)"
+                val keysPathPart = mutableListOf<String>()
+                tableMetadata.primaryKeys.forEach { pk ->
+                    val oaIdPathParameterName = "$fullTableName.${pk.name}"
+                    val oaIdPathParameter = PathParameter()
+                            .name(pk.name)
+                            .description(pk.name)
+                            .schema(Schema<Any>().type(jdbcToOpenApiType(pk.jdbcType.name)))
+                            .required(true)
+                            .allowEmptyValue(false)
+                    val format = jdbcToOpenApiFormat(pk.jdbcType.name)
+                    if (format != null) {
+                        oaIdPathParameter.schema.format = format
+                    }
+                    components.addParameters(oaIdPathParameterName, oaIdPathParameter)
+                    oaGetSingleOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
+                    oaUpdateOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
+                    oaDeleteOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
+                    keysPathPart.add("{${pk.name}}")
+                }
+                val singlePath = "/$fullTablePath(${keysPathPart.stream().collect(Collectors.joining(", "))})"
 
                 val oaSinglePathItem = PathItem()
                         .get(oaGetSingleOperation)
