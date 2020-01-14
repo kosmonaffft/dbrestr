@@ -24,4 +24,13 @@ class DataRestHandler(private val dataService: DataService) {
         response.setHeader(TOTAL_HEADER_NAME, count.toString())
         return result
     }
+
+    @GetMapping(path = ["/data/{schema}/{table}/({ids})"], produces = ["application/json"])
+    fun selectOne(@PathVariable("schema") schema: String,
+                  @PathVariable("table") table: String,
+                  @PathVariable("ids") ids: String): Map<String, Any> {
+
+        val result = dataService.selectOne(schema, table, ids.split(',').map { it.trim() })
+        return result
+    }
 }
