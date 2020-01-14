@@ -23,4 +23,6 @@ interface DataService {
     data class SelectManyResult(val data: List<Map<String, Any>>, val count: Long)
 
     fun selectMany(schema: String, table: String, page: Int, size: Int): SelectManyResult
+
+    fun selectOne(schema: String, table: String, id: List<Any>): Map<String, Any>
 }

@@ -17,6 +17,8 @@ package xyz.kosmonaffft.dbrestr.metadata
 import java.util.*
 
 /**
+ * Key - schema name, value - schema metadata.
+ *
  * @author Anton V. Kirilchik
  * @since 27.09.2019
  */
