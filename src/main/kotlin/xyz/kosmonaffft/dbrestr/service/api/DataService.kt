@@ -1,4 +1,4 @@
-//  Copyright 2019 Anton V. Kirilchik <kosmonaffft@gmail.com>
+//  Copyright 2019-2020 Anton V. Kirilchik <kosmonaffft@gmail.com>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ interface DataService {
 
     data class SelectManyResult(val data: List<Map<String, Any>>, val count: Long)
 
-    fun selectMany(schema: String, table: String, page: Int, size: Int): SelectManyResult
+    fun selectMany(schema: String, table: String, page: Long, size: Long): SelectManyResult
 
     fun selectOne(schema: String, table: String, id: List<Any>): Map<String, Any>
 }

@@ -25,8 +25,36 @@ class DataServiceImpl(private val dataSource: DataSource,
                       private val sqlService: SqlService,
                       private val databaseMetadataService: DatabaseMetadataService) : DataService {
 
-    override fun selectMany(schema: String, table: String, page: Int, size: Int): DataService.SelectManyResult {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun selectMany(schema: String, table: String, page: Long, size: Long): DataService.SelectManyResult {
+        val selectScript = sqlService.selectMany(schema, table, page * size, page * (size + 1))
+        val countScript = sqlService.count(schema, table)
+
+        val result = dataSource.connection.use { connection ->
+            val preparedSelect = connection.prepareStatement(selectScript)
+            val preparedCount = connection.prepareStatement(countScript)
+
+            val data = mutableListOf<Map<String, Any>>()
+            preparedSelect.executeQuery().use { resultSet ->
+                val metaData = resultSet.metaData
+                while (resultSet.next()) {
+                    val record = mutableMapOf<String, Any>()
+                    for (i in 0..metaData.columnCount) {
+                        val label = metaData.getColumnLabel(i + 1)
+                        val data = resultSet.getObject(i + 1)
+                        record.put(label, data)
+                    }
+                    data.add(record)
+                }
+            }
+
+            val count = preparedCount.executeQuery().use { resultSet ->
+                resultSet.getLong(1)
+            }
+
+            DataService.SelectManyResult(data, count)
+        }
+
+        return result
     }
 
     override fun selectOne(schema: String, table: String, id: List<Any>): Map<String, Any> {

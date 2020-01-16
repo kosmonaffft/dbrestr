@@ -1,4 +1,4 @@
-//  Copyright 2019 Anton V. Kirilchik <kosmonaffft@gmail.com>
+//  Copyright 2019-2020 Anton V. Kirilchik <kosmonaffft@gmail.com>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ class SqlServiceImpl : SqlService {
                 .append(".")
                 .append(table)
 
+        // TODO: Replace joining to parameters!!!
         sql.append(" LIMIT ")
                 .append(limit)
                 .append(" OFFSET ")
