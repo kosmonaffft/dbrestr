@@ -1,4 +1,4 @@
-//  Copyright 2019 Anton V. Kirilchik <kosmonaffft@gmail.com>
+//  Copyright 2019-2020 Anton V. Kirilchik <kosmonaffft@gmail.com>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -78,7 +78,6 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
                 .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaErrorSchemaName))))
 
         components.addSchemas(oaErrorSchemaName, oaErrorSchema)
-
         components.addResponses(oaErrorResponseName, oaErrorResponse)
 
         databaseMetadata.keys.forEach { schemaName ->
@@ -94,14 +93,12 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
                 val oaTableSchemaRef = "#/components/schemas/$fullTableName"
 
                 tableMetadata.allColumns.forEach { columnMetadata ->
-                    val columnFormat = jdbcToOpenApiFormat(columnMetadata.jdbcType.name)
-
                     val oaColumnSchema = Schema<Any>()
                             .title(columnMetadata.name)
                             .type(jdbcToOpenApiType(columnMetadata.jdbcType.name))
                             .nullable(columnMetadata.nullable)
-                    if (columnFormat != null) {
-                        oaColumnSchema.format(columnFormat)
+                    jdbcToOpenApiFormat(columnMetadata.jdbcType.name)?.also {
+                        oaColumnSchema.format(it)
                     }
 
                     oaTableSchema.addProperties(columnMetadata.name, oaColumnSchema)
@@ -112,7 +109,7 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
                 val oaSingleResponse = ApiResponse()
                         .description("One record from '$fullTableName' table.")
                         .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaTableSchemaRef))))
-                val oaSingleResponseName = fullTableName
+                val oaSingleResponseName = "$fullTableName.row"
 
                 val oaListResponse = ApiResponse()
                         .description("List of records from '$fullTableName' table.")
@@ -190,7 +187,7 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
                                 .addApiResponse("500", ApiResponse().`$ref`(oaErrorResponseName))
                         )
 
-                val keysPathPart = mutableListOf<String>()
+                val keysPathParts = mutableListOf<String>()
                 tableMetadata.primaryKeys.forEach { pk ->
                     val oaIdPathParameterName = "$fullTableName.${pk.name}"
                     val oaIdPathParameter = PathParameter()
@@ -199,18 +196,17 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
                             .schema(Schema<Any>().type(jdbcToOpenApiType(pk.jdbcType.name)))
                             .required(true)
                             .allowEmptyValue(false)
-                    val format = jdbcToOpenApiFormat(pk.jdbcType.name)
-                    if (format != null) {
-                        oaIdPathParameter.schema.format = format
+                    jdbcToOpenApiFormat(pk.jdbcType.name)?.also {
+                        oaIdPathParameter.schema.format = it
                     }
                     components.addParameters(oaIdPathParameterName, oaIdPathParameter)
                     oaGetSingleOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
                     oaUpdateOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
                     oaDeleteOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
-                    keysPathPart.add("{${pk.name}}")
+                    keysPathParts.add("{${pk.name}}")
                 }
-                val keyParamString = keysPathPart.stream().collect(Collectors.joining(", "))
-                val singlePath = "/data/$fullTablePath($keyParamString)"
+                val keyParamString = keysPathParts.stream().collect(Collectors.joining(", "))
+                val singlePath = "/data/$fullTablePath/$keyParamString"
 
                 val oaSinglePathItem = PathItem()
                         .get(oaGetSingleOperation)
