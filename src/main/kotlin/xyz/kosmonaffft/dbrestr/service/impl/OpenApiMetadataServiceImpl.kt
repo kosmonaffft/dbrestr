@@ -31,6 +31,7 @@ import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService
 import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.PAGE_PARAMETER_NAME
 import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.PAGE_SIZE_PARAMETER_NAME
 import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.TOTAL_HEADER_NAME
+import java.sql.JDBCType
 import java.util.stream.Collectors
 
 /**
@@ -90,16 +91,19 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
 
                 val oaTableSchema = ObjectSchema()
                         .name(fullTableName)
+                tableMetadata.comment?.also { oaTableSchema.description = it }
+
                 val oaTableSchemaRef = "#/components/schemas/$fullTableName"
 
                 tableMetadata.allColumns.forEach { columnMetadata ->
+                    val oaType = jdbcToOpenApiType(columnMetadata.jdbcType)
+                    val oaFormat = jdbcToOpenApiFormat(columnMetadata.jdbcType)
                     val oaColumnSchema = Schema<Any>()
                             .title(columnMetadata.name)
-                            .type(jdbcToOpenApiType(columnMetadata.jdbcType.name))
+                            .type(oaType)
                             .nullable(columnMetadata.nullable)
-                    jdbcToOpenApiFormat(columnMetadata.jdbcType.name)?.also {
-                        oaColumnSchema.format(it)
-                    }
+                    oaFormat?.also { oaColumnSchema.format = it }
+                    columnMetadata.comment?.also { oaColumnSchema.description = it }
 
                     oaTableSchema.addProperties(columnMetadata.name, oaColumnSchema)
                 }
@@ -162,7 +166,7 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
 
                 paths.addPathItem(listPath, oaListPathItem)
 
-                val oaGetOneOperationName = "getOne.$fullTableName"
+                val oaGetOneOperationName = "select.$fullTableName"
                 val oaGetSingleOperation = Operation()
                         .operationId(oaGetOneOperationName)
                         .responses(ApiResponses()
@@ -190,22 +194,23 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
                 val keysPathParts = mutableListOf<String>()
                 tableMetadata.primaryKeys.forEach { pk ->
                     val oaIdPathParameterName = "$fullTableName.${pk.name}"
+                    val oaType = jdbcToOpenApiType(pk.jdbcType)
+                    val oaFormat = jdbcToOpenApiFormat(pk.jdbcType)
                     val oaIdPathParameter = PathParameter()
                             .name(pk.name)
                             .description(pk.name)
-                            .schema(Schema<Any>().type(jdbcToOpenApiType(pk.jdbcType.name)))
+                            .schema(Schema<Any>().type(oaType))
                             .required(true)
                             .allowEmptyValue(false)
-                    jdbcToOpenApiFormat(pk.jdbcType.name)?.also {
-                        oaIdPathParameter.schema.format = it
-                    }
+                    oaFormat?.also { oaIdPathParameter.schema.format = it }
+
                     components.addParameters(oaIdPathParameterName, oaIdPathParameter)
                     oaGetSingleOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
                     oaUpdateOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
                     oaDeleteOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
                     keysPathParts.add("{${pk.name}}")
                 }
-                val keyParamString = keysPathParts.stream().collect(Collectors.joining(", "))
+                val keyParamString = keysPathParts.stream().collect(Collectors.joining("/"))
                 val singlePath = "/data/$fullTablePath/$keyParamString"
 
                 val oaSinglePathItem = PathItem()
@@ -234,8 +239,8 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
     private data class PathsAndComponents(val paths: Paths, val components: Components)
 }
 
-private fun jdbcToOpenApiType(jdbcType: String): String {
-    return when (jdbcType.toLowerCase()) {
+private fun jdbcToOpenApiType(jdbcType: JDBCType): String {
+    return when (jdbcType.name.toLowerCase()) {
         "text", "bytea", "varchar", "binary", "date", "timestamp", "timestamptz", "json", "jsonb", "uuid" -> "string"
 
         "int4", "int8", "integer", "bigint", "serial", "bigserial" -> "integer"
@@ -244,12 +249,12 @@ private fun jdbcToOpenApiType(jdbcType: String): String {
 
         "bool" -> "boolean"
 
-        else -> jdbcType
+        else -> jdbcType.name
     }
 }
 
-private fun jdbcToOpenApiFormat(jdbcType: String): String? {
-    return when (jdbcType.toLowerCase()) {
+private fun jdbcToOpenApiFormat(jdbcType: JDBCType): String? {
+    return when (jdbcType.name.toLowerCase()) {
         "int4", "serial", "int" -> "int32"
 
         "int8", "bigserial", "bigint" -> "int64"

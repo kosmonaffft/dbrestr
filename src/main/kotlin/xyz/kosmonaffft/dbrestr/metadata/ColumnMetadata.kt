@@ -1,4 +1,4 @@
-//  Copyright 2019 Anton V. Kirilchik <kosmonaffft@gmail.com>
+//  Copyright 2019-2020 Anton V. Kirilchik <kosmonaffft@gmail.com>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -23,5 +23,6 @@ import java.sql.JDBCType
 data class ColumnMetadata(
         val name: String,
         val jdbcType: JDBCType,
-        val nullable: Boolean
+        val nullable: Boolean,
+        val comment: String?
 )

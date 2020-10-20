@@ -1,4 +1,4 @@
-//  Copyright 2019 Anton V. Kirilchik <kosmonaffft@gmail.com>
+//  Copyright 2019-2020 Anton V. Kirilchik <kosmonaffft@gmail.com>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -77,7 +77,8 @@ class DatabaseMetadataServiceImpl(private val dataSource: DataSource,
         connection.metaData.getTables(null, schemaName, null, arrayOf("TABLE")).use { tablesResultSet ->
             while (tablesResultSet.next()) {
                 val tableName = tablesResultSet.getString("TABLE_NAME")
-                val tableMetadata = generateTableMetadata(connection, schemaName, tableName)
+                val comment = tablesResultSet.getString("REMARKS")
+                val tableMetadata = generateTableMetadata(connection, schemaName, tableName, comment)
                 result[tableName] = tableMetadata
             }
         }
@@ -85,7 +86,7 @@ class DatabaseMetadataServiceImpl(private val dataSource: DataSource,
         return result
     }
 
-    private fun generateTableMetadata(connection: Connection, schemaName: String, tableName: String): TableMetadata {
+    private fun generateTableMetadata(connection: Connection, schemaName: String, tableName: String, tableComment: String?): TableMetadata {
         val allColumnsMap = HashMap<String, ColumnMetadata>()
         val allColumns = ArrayList<ColumnMetadata>()
         connection.metaData.getColumns(null, schemaName, tableName, null).use { columnsResultSet ->
@@ -93,7 +94,8 @@ class DatabaseMetadataServiceImpl(private val dataSource: DataSource,
                 val columnName = columnsResultSet.getString("COLUMN_NAME")
                 val columnType = columnsResultSet.getInt("DATA_TYPE")
                 val columnNullable = columnsResultSet.getShort("NULLABLE") != 0.toShort()
-                val columnMetadata = ColumnMetadata(columnName, JDBCType.valueOf(columnType), columnNullable)
+                val comment = columnsResultSet.getString("REMARKS")
+                val columnMetadata = ColumnMetadata(columnName, JDBCType.valueOf(columnType), columnNullable, comment)
                 allColumns.add(columnMetadata)
                 allColumnsMap[columnName] = columnMetadata
             }
@@ -114,6 +116,6 @@ class DatabaseMetadataServiceImpl(private val dataSource: DataSource,
                 .sorted()
                 .map { primaryKeysMap[it]!! }
 
-        return TableMetadata(allColumns, primaryKeys)
+        return TableMetadata(allColumns, primaryKeys, tableComment)
     }
 }

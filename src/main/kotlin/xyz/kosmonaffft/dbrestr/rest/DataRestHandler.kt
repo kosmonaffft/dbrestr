@@ -24,6 +24,10 @@ import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.PAGE
 import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.TOTAL_HEADER_NAME
 import javax.servlet.http.HttpServletResponse
 
+/**
+ * @author Anton V. Kirilchik
+ * @since 25.12.2019
+ */
 @RestController
 class DataRestHandler(private val dataService: DataService) {
 
@@ -35,7 +39,7 @@ class DataRestHandler(private val dataService: DataService) {
                    response: HttpServletResponse): List<Map<String, Any>> {
 
         val (result, count) = dataService.selectMany(schema, table, page, size)
-        response.setHeader(TOTAL_HEADER_NAME, count.toString())
+        response.addHeader(TOTAL_HEADER_NAME, count.toString())
         return result
     }
 

@@ -1,4 +1,4 @@
-//  Copyright 2019 Anton V. Kirilchik <kosmonaffft@gmail.com>
+//  Copyright 2019-2020 Anton V. Kirilchik <kosmonaffft@gmail.com>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService
 @RestController
 class MetadataRestHandler(private val openApiMetadataService: OpenApiMetadataService) {
 
-    @GetMapping(path = ["/metadata/yaml"], produces = ["application/yaml"])
+    @GetMapping(path = ["/metadata/yaml"], produces = ["text/yaml"])
     fun getYamlMetadata(): String {
         val openAPI = openApiMetadataService.generateOpenApiV3Metadata()
         return Yaml.pretty(openAPI)
