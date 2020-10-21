@@ -25,6 +25,7 @@ import io.swagger.v3.oas.models.parameters.RequestBody
 import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.responses.ApiResponses
 import io.swagger.v3.oas.models.servers.Server
+import xyz.kosmonaffft.dbrestr.doIf
 import xyz.kosmonaffft.dbrestr.metadata.DatabaseMetadata
 import xyz.kosmonaffft.dbrestr.service.api.DatabaseMetadataService
 import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService
@@ -60,11 +61,13 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
 
         components.addParameters(PAGE_SIZE_PARAMETER_NAME,
                 QueryParameter()
+                        .name("page")
                         .required(false)
                         .schema(IntegerSchema().format("int64")))
 
         components.addParameters(PAGE_PARAMETER_NAME,
                 QueryParameter()
+                        .name("size")
                         .required(false)
                         .schema(IntegerSchema().format("int64")))
 
@@ -86,52 +89,77 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
             schemaMetadata.keys.forEach { tableName ->
                 val tableMetadata = schemaMetadata[tableName]!!
                 val fullTableName = "$schemaName.$tableName"
+                val insertFullTableName = "insert.$schemaName.$tableName"
+                val updateFullTableName = "update.$schemaName.$tableName"
                 val fullTablePath = "$schemaName/$tableName"
 
-                val oaTableSchema = ObjectSchema()
-                        .name(fullTableName)
-                tableMetadata.comment?.also { oaTableSchema.description = it }
+                val oaInsertTableSchema = ObjectSchema()
+                        .name(insertFullTableName)
+                val oaUpdateTableSchema = ObjectSchema()
+                        .name(updateFullTableName)
 
-                val oaTableSchemaRef = "#/components/schemas/$fullTableName"
+                tableMetadata.comment?.also {
+                    oaInsertTableSchema.description = it
+                    oaUpdateTableSchema.description = it
+                }
+
+                val oaInsertTableSchemaRef = "#/components/schemas/$insertFullTableName"
+                val oaUpdateTableSchemaRef = "#/components/schemas/$updateFullTableName"
 
                 tableMetadata.allColumns.forEach { columnMetadata ->
                     val oaType = jdbcToOpenApiType(columnMetadata.jdbcType)
                     val oaFormat = jdbcToOpenApiFormat(columnMetadata.jdbcType)
-                    val oaColumnSchema = Schema<Any>()
+                    val oaInsertColumnSchema = Schema<Any>()
                             .title(columnMetadata.name)
                             .type(oaType)
                             .nullable(columnMetadata.nullable)
-                    oaFormat?.also { oaColumnSchema.format = it }
-                    columnMetadata.comment?.also { oaColumnSchema.description = it }
 
-                    oaTableSchema.addProperties(columnMetadata.name, oaColumnSchema)
+                    val oaUpdateColumnSchema = Schema<Any>()
+                            .title(columnMetadata.name)
+                            .type(oaType)
+                            .nullable(columnMetadata.nullable)
+                    oaFormat?.also {
+                        oaInsertColumnSchema.format = it
+                        oaUpdateColumnSchema.format = it
+                    }
+                    columnMetadata.comment?.also {
+                        oaInsertColumnSchema.description = it
+                        oaUpdateColumnSchema.description = it
+                    }
+
+                    columnMetadata.nullable.doIf {
+                        oaInsertTableSchema.addRequiredItem(columnMetadata.name)
+                    }
+                    oaInsertTableSchema.addProperties(columnMetadata.name, oaInsertColumnSchema)
+                    oaUpdateTableSchema.addProperties(columnMetadata.name, oaUpdateColumnSchema)
                 }
 
-                components.addSchemas(fullTableName, oaTableSchema)
+                components.addSchemas(insertFullTableName, oaInsertTableSchema)
+                components.addSchemas(updateFullTableName, oaUpdateTableSchema)
 
                 val oaSingleResponse = ApiResponse()
                         .description("One record from '$fullTableName' table.")
-                        .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaTableSchemaRef))))
-                val oaSingleResponseName = "$fullTableName.row"
+                        .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaInsertTableSchemaRef))))
+                val oaSingleResponseName = "$fullTableName.row.result"
 
                 val oaListResponse = ApiResponse()
                         .description("List of records from '$fullTableName' table.")
                         .addHeaderObject(TOTAL_HEADER_NAME, Header().`$ref`(oaTotalHeaderName))
-                        .content(Content().addMediaType("application/json", MediaType().schema(ArraySchema().items(ObjectSchema().`$ref`(oaTableSchemaRef)))))
-                val oaListResponseName = "$fullTableName.list"
+                        .content(Content().addMediaType("application/json", MediaType().schema(ArraySchema().items(ObjectSchema().`$ref`(oaInsertTableSchemaRef)))))
+                val oaListResponseName = "$fullTableName.list.result"
 
                 components.addResponses(oaSingleResponseName, oaSingleResponse)
                 components.addResponses(oaListResponseName, oaListResponse)
 
                 val oaInsertRequestBody = RequestBody()
                         .description("Insert record into '$fullTableName' table.")
-                        .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaTableSchemaRef))))
-                val oaInsertRequestBodyName = "insert.$fullTableName"
+                        .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaInsertTableSchemaRef))))
+                val oaInsertRequestBodyName = "$fullTableName.insert.arg"
 
                 val oaUpdateRequestBody = RequestBody()
                         .description("Update record in '$fullTableName' table.")
-                        .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaTableSchemaRef))))
-                val oaUpdateRequestBodyName = "update.$fullTableName"
+                        .content(Content().addMediaType("application/json", MediaType().schema(ObjectSchema().`$ref`(oaUpdateTableSchemaRef))))
+                val oaUpdateRequestBodyName = "$fullTableName.update.arg"
 
                 components.addRequestBodies(oaInsertRequestBodyName, oaInsertRequestBody)
                 components.addRequestBodies(oaUpdateRequestBodyName, oaUpdateRequestBody)
@@ -186,13 +214,14 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
                 val oaDeleteOperation = Operation()
                         .operationId(oaDeleteOperationName)
                         .responses(ApiResponses()
-                                .addApiResponse("204", ApiResponse())
+                                .addApiResponse("204", ApiResponse().description("Successfully deleted record from '$fullTableName' table."))
                                 .addApiResponse("500", ApiResponse().`$ref`(oaErrorResponseName))
                         )
 
                 val keysPathParts = mutableListOf<String>()
                 tableMetadata.primaryKeys.forEach { pk ->
                     val oaIdPathParameterName = "$fullTableName.${pk.name}"
+                    val oaIdPathParameterRef = "#/components/parameters/$oaIdPathParameterName"
                     val oaType = jdbcToOpenApiType(pk.jdbcType)
                     val oaFormat = jdbcToOpenApiFormat(pk.jdbcType)
                     val oaIdPathParameter = PathParameter()
@@ -204,9 +233,9 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
                     oaFormat?.also { oaIdPathParameter.schema.format = it }
 
                     components.addParameters(oaIdPathParameterName, oaIdPathParameter)
-                    oaGetSingleOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
-                    oaUpdateOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
-                    oaDeleteOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterName))
+                    oaGetSingleOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterRef))
+                    oaUpdateOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterRef))
+                    oaDeleteOperation.addParametersItem(Parameter().`$ref`(oaIdPathParameterRef))
                     keysPathParts.add("{${pk.name}}")
                 }
                 val keyParamString = keysPathParts.stream().collect(Collectors.joining("/"))
@@ -246,7 +275,7 @@ private fun jdbcToOpenApiType(jdbcType: JDBCType): String {
 
         "float4", "float8", "double" -> "number"
 
-        "bool" -> "boolean"
+        "bool", "bit" -> "boolean"
 
         else -> jdbcType.name
     }
