@@ -15,7 +15,6 @@
 package xyz.kosmonaffft.dbrestr.service.impl
 
 import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.stereotype.Service
 import xyz.kosmonaffft.dbrestr.service.api.DataService
 import xyz.kosmonaffft.dbrestr.service.api.DatabaseMetadataService
 import xyz.kosmonaffft.dbrestr.service.api.SqlService
@@ -25,7 +24,6 @@ import javax.sql.DataSource
  * @author Anton V. Kirilchik
  * @since 25.12.2019
  */
-@Service
 class DataServiceImpl(private val dataSource: DataSource,
                       private val sqlService: SqlService,
                       private val databaseMetadataService: DatabaseMetadataService) : DataService {

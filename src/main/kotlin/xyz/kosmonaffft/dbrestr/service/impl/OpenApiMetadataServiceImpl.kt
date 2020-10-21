@@ -25,8 +25,8 @@ import io.swagger.v3.oas.models.parameters.RequestBody
 import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.responses.ApiResponses
 import io.swagger.v3.oas.models.servers.Server
-import org.springframework.stereotype.Service
 import xyz.kosmonaffft.dbrestr.metadata.DatabaseMetadata
+import xyz.kosmonaffft.dbrestr.service.api.DatabaseMetadataService
 import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService
 import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.PAGE_PARAMETER_NAME
 import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.PAGE_SIZE_PARAMETER_NAME
@@ -38,8 +38,7 @@ import java.util.stream.Collectors
  * @author Anton V. Kirilchik
  * @since 17.09.2019
  */
-@Service
-class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMetadataServiceImpl) : OpenApiMetadataService {
+class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMetadataService) : OpenApiMetadataService {
 
     override fun generateOpenApiV3Metadata(): OpenAPI {
         val databaseMetadata = databaseMetadataService.getDatabaseMetadata()

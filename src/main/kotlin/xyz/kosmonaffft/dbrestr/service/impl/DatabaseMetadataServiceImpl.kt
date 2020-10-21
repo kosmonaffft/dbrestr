@@ -18,7 +18,6 @@ import com.google.common.base.Supplier
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
-import org.springframework.stereotype.Service
 import xyz.kosmonaffft.dbrestr.configuration.ConfigurationProperties
 import xyz.kosmonaffft.dbrestr.metadata.ColumnMetadata
 import xyz.kosmonaffft.dbrestr.metadata.DatabaseMetadata
@@ -37,7 +36,6 @@ import kotlin.collections.HashMap
  * @author Anton V. Kirilchik
  * @since 17.09.2019
  */
-@Service
 class DatabaseMetadataServiceImpl(private val dataSource: DataSource,
                                   private val configurationProperties: ConfigurationProperties) : DatabaseMetadataService {
 

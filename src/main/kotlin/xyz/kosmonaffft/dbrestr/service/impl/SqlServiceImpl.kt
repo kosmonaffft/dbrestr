@@ -14,7 +14,6 @@
 
 package xyz.kosmonaffft.dbrestr.service.impl
 
-import org.springframework.stereotype.Service
 import xyz.kosmonaffft.dbrestr.metadata.DatabaseMetadata
 import xyz.kosmonaffft.dbrestr.service.api.SqlService
 import java.lang.String.join
@@ -25,7 +24,6 @@ import java.util.stream.Collectors
  * @author Anton V. Kirilchik
  * @since 20.12.2019
  */
-@Service
 class SqlServiceImpl : SqlService {
 
     override fun selectMany(schema: String, table: String, offset: Long, limit: Long): String {
