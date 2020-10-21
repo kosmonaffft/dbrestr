@@ -35,10 +35,6 @@ import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.TOTA
 import java.sql.JDBCType
 import java.util.stream.Collectors
 
-/**
- * @author Anton V. Kirilchik
- * @since 17.09.2019
- */
 class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMetadataService) : OpenApiMetadataService {
 
     override fun generateOpenApiV3Metadata(): OpenAPI {
@@ -61,13 +57,13 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
 
         components.addParameters(PAGE_SIZE_PARAMETER_NAME,
                 QueryParameter()
-                        .name("page")
+                        .name(PAGE_SIZE_PARAMETER_NAME)
                         .required(false)
                         .schema(IntegerSchema().format("int64")))
 
         components.addParameters(PAGE_PARAMETER_NAME,
                 QueryParameter()
-                        .name("size")
+                        .name(PAGE_PARAMETER_NAME)
                         .required(false)
                         .schema(IntegerSchema().format("int64")))
 

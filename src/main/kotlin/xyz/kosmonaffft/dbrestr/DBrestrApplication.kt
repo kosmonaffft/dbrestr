@@ -29,10 +29,6 @@ import xyz.kosmonaffft.dbrestr.service.impl.OpenApiMetadataServiceImpl
 import xyz.kosmonaffft.dbrestr.service.impl.SqlServiceImpl
 import javax.sql.DataSource
 
-/**
- * @author Anton V. Kirilchik
- * @since 17.09.2019
- */
 @SpringBootApplication
 @EnableConfigurationProperties(ConfigurationProperties::class)
 class DBrestrApplication {

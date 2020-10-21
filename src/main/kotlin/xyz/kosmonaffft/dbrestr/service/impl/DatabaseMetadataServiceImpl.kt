@@ -32,10 +32,6 @@ import java.util.*
 import javax.sql.DataSource
 import kotlin.collections.HashMap
 
-/**
- * @author Anton V. Kirilchik
- * @since 17.09.2019
- */
 class DatabaseMetadataServiceImpl(private val dataSource: DataSource,
                                   private val configurationProperties: ConfigurationProperties) : DatabaseMetadataService {
 

@@ -16,10 +16,6 @@ package xyz.kosmonaffft.dbrestr.metadata
 
 import java.sql.JDBCType
 
-/**
- * @author Anton V. Kirilchik
- * @since 27.09.2019
- */
 data class ColumnMetadata(
         val name: String,
         val jdbcType: JDBCType,

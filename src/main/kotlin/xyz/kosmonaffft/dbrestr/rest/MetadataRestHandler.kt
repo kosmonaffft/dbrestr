@@ -20,10 +20,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService
 
-/**
- * @author Anton V. Kirilchik
- * @since 10.06.2019
- */
 @RestController
 class MetadataRestHandler(private val openApiMetadataService: OpenApiMetadataService) {
 

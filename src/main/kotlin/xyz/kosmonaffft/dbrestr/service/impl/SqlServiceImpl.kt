@@ -20,10 +20,6 @@ import java.lang.String.join
 import java.util.Collections.nCopies
 import java.util.stream.Collectors
 
-/**
- * @author Anton V. Kirilchik
- * @since 20.12.2019
- */
 class SqlServiceImpl : SqlService {
 
     override fun selectMany(schema: String, table: String, offset: Long, limit: Long): String {

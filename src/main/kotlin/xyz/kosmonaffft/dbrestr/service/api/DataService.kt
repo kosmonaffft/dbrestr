@@ -14,10 +14,6 @@
 
 package xyz.kosmonaffft.dbrestr.service.api
 
-/**
- * @author Anton V. Kirilchik
- * @since 25.12.2019
- */
 interface DataService {
 
     data class SelectManyResult(val data: List<Map<String, Any>>, val count: Long)

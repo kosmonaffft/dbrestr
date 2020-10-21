@@ -16,10 +16,6 @@ package xyz.kosmonaffft.dbrestr.service.api
 
 import io.swagger.v3.oas.models.OpenAPI
 
-/**
- * @author Anton V. Kirilchik
- * @since 25.12.2019
- */
 interface OpenApiMetadataService {
 
     companion object {

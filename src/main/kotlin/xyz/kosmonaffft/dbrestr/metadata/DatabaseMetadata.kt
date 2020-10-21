@@ -18,8 +18,5 @@ import java.util.*
 
 /**
  * Key - schema name, value - schema metadata.
- *
- * @author Anton V. Kirilchik
- * @since 27.09.2019
  */
 class DatabaseMetadata : TreeMap<String, SchemaMetadata>()

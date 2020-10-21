@@ -24,10 +24,6 @@ import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.PAGE
 import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.TOTAL_HEADER_NAME
 import javax.servlet.http.HttpServletResponse
 
-/**
- * @author Anton V. Kirilchik
- * @since 25.12.2019
- */
 @RestController
 class DataRestHandler(private val dataService: DataService) {
 

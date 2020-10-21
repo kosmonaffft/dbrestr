@@ -20,10 +20,6 @@ import xyz.kosmonaffft.dbrestr.service.api.DatabaseMetadataService
 import xyz.kosmonaffft.dbrestr.service.api.SqlService
 import javax.sql.DataSource
 
-/**
- * @author Anton V. Kirilchik
- * @since 25.12.2019
- */
 class DataServiceImpl(private val dataSource: DataSource,
                       private val sqlService: SqlService,
                       private val databaseMetadataService: DatabaseMetadataService) : DataService {

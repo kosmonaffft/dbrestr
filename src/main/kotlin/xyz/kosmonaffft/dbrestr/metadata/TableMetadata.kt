@@ -14,10 +14,6 @@
 
 package xyz.kosmonaffft.dbrestr.metadata
 
-/**
- * @author Anton V. Kirilchik
- * @since 27.09.2019
- */
 data class TableMetadata(
         val allColumns: List<ColumnMetadata>,
         val primaryKeys: List<ColumnMetadata>,

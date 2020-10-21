@@ -16,10 +16,6 @@ package xyz.kosmonaffft.dbrestr.service.api
 
 import xyz.kosmonaffft.dbrestr.metadata.DatabaseMetadata
 
-/**
- * @author Anton V. Kirilchik
- * @since 25.12.2019
- */
 interface DatabaseMetadataService {
 
     fun getDatabaseMetadata(): DatabaseMetadata
