@@ -123,7 +123,7 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
                         oaUpdateColumnSchema.description = it
                     }
 
-                    columnMetadata.nullable.doIf {
+                    if (!columnMetadata.nullable && !columnMetadata.autoIncremented) {
                         oaInsertTableSchema.addRequiredItem(columnMetadata.name)
                     }
                     oaInsertTableSchema.addProperties(columnMetadata.name, oaInsertColumnSchema)

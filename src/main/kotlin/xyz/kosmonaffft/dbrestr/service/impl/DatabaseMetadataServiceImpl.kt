@@ -89,7 +89,8 @@ class DatabaseMetadataServiceImpl(private val dataSource: DataSource,
                 val columnType = columnsResultSet.getInt("DATA_TYPE")
                 val columnNullable = columnsResultSet.getShort("NULLABLE") != 0.toShort()
                 val comment = columnsResultSet.getString("REMARKS")
-                val columnMetadata = ColumnMetadata(columnName, JDBCType.valueOf(columnType), columnNullable, comment)
+                val autoIncremented = columnsResultSet.getString("IS_AUTOINCREMENT") == "YES"
+                val columnMetadata = ColumnMetadata(columnName, JDBCType.valueOf(columnType), columnNullable, autoIncremented, comment)
                 allColumns.add(columnMetadata)
                 allColumnsMap[columnName] = columnMetadata
             }

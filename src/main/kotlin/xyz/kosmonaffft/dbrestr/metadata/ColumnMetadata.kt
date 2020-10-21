@@ -20,5 +20,6 @@ data class ColumnMetadata(
         val name: String,
         val jdbcType: JDBCType,
         val nullable: Boolean,
+        val autoIncremented: Boolean,
         val comment: String?
 )
