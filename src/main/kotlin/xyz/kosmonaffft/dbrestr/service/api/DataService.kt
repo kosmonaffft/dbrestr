@@ -20,5 +20,5 @@ interface DataService {
 
     fun selectMany(schema: String, table: String, page: Long, size: Long): SelectManyResult
 
-    fun selectOne(schema: String, table: String, id: List<Any>): Map<String, Any>
+    fun selectOne(schema: String, table: String, id: String): Map<String, Any>
 }

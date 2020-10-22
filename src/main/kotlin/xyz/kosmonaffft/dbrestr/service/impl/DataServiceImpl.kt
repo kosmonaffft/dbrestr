@@ -15,9 +15,18 @@
 package xyz.kosmonaffft.dbrestr.service.impl
 
 import org.springframework.jdbc.core.JdbcTemplate
+import xyz.kosmonaffft.dbrestr.metadata.ColumnMetadata
 import xyz.kosmonaffft.dbrestr.service.api.DataService
 import xyz.kosmonaffft.dbrestr.service.api.DatabaseMetadataService
 import xyz.kosmonaffft.dbrestr.service.api.SqlService
+import java.math.BigDecimal
+import java.sql.Date
+import java.sql.Timestamp
+import java.text.SimpleDateFormat
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
+import java.util.*
+import java.util.regex.Pattern
 import javax.sql.DataSource
 
 class DataServiceImpl(private val dataSource: DataSource,
@@ -38,7 +47,53 @@ class DataServiceImpl(private val dataSource: DataSource,
         return result
     }
 
-    override fun selectOne(schema: String, table: String, id: List<Any>): Map<String, Any> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun selectOne(schema: String, table: String, id: String): Map<String, Any> {
+        val metaData = databaseMetadataService.getDatabaseMetadata()
+        val columnsMetadata = metaData[schema]!![table]!!
+        val primaryKeysMetadata = columnsMetadata.primaryKeys
+
+        val idColumnsNames = primaryKeysMetadata.map { it.name }
+        val sql = sqlService.selectOne(schema, table, idColumnsNames)
+        val parsedId = parseId(primaryKeysMetadata, id)
+
+        val template = JdbcTemplate(dataSource)
+
+        val args = idColumnsNames.map {
+            parsedId[it]
+        }
+
+        return template.queryForMap(sql, args)
+    }
+}
+
+private val DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd")
+private val DIGIT_PATTERN = Pattern.compile("[0-9]+")
+
+private fun parseId(primaryKeyMetadata: List<ColumnMetadata>, id: String): MutableMap<String, Any> {
+    if (primaryKeyMetadata.size == 1) {
+        val columnMetadata = primaryKeyMetadata.first()
+        return Collections.singletonMap(columnMetadata.name, fromJson(columnMetadata.type, id))
+    }
+
+    TODO("Implement composite keys!!!")
+}
+
+private fun fromJson(jdbcType: String, jsonString: String): Any {
+    val str = jsonString.trim()
+    return when (jdbcType) {
+        "timestamp" -> {
+            if (DIGIT_PATTERN.matcher(str).matches()) {
+                return Timestamp(str.toLong())
+            }
+            val value = OffsetDateTime.parse(str)
+            Timestamp.valueOf(value.atZoneSameInstant(ZoneOffset.UTC).toLocalDateTime())
+        }
+        "date" -> Date(DATE_FORMAT.parse(jsonString).getTime())
+        "int2", "int4", "serial" -> str.toInt()
+        "int8", "bigserial" -> str.toLong()
+        "uuid" -> UUID.fromString(str)
+        "numeric" -> BigDecimal(str)
+        "bool", "boolean" -> str.toBoolean()
+        else -> jsonString
     }
 }

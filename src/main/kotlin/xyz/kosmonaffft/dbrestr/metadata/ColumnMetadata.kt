@@ -14,11 +14,9 @@
 
 package xyz.kosmonaffft.dbrestr.metadata
 
-import java.sql.JDBCType
-
 data class ColumnMetadata(
         val name: String,
-        val jdbcType: JDBCType,
+        val type: String,
         val nullable: Boolean,
         val autoIncremented: Boolean,
         val comment: String?

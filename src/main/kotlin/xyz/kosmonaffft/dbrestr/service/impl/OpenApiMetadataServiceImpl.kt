@@ -103,8 +103,8 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
                 val oaInsertTableSchemaRef = "#/components/schemas/$insertTableSchemaName"
 
                 tableMetadata.allColumns.forEach { columnMetadata ->
-                    val oaType = jdbcToOpenApiType(columnMetadata.jdbcType)
-                    val oaFormat = jdbcToOpenApiFormat(columnMetadata.jdbcType)
+                    val oaType = jdbcToOpenApiType(columnMetadata.type)
+                    val oaFormat = jdbcToOpenApiFormat(columnMetadata.type)
                     val columnSchema = Schema<Any>()
                             .title(columnMetadata.name)
                             .type(oaType)
@@ -209,8 +209,8 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
                 tableMetadata.primaryKeys.forEach { pk ->
                     val oaIdPathParameterName = "$fullTableName.${pk.name}.parameter"
                     val oaIdPathParameterRef = "#/components/parameters/$oaIdPathParameterName"
-                    val oaType = jdbcToOpenApiType(pk.jdbcType)
-                    val oaFormat = jdbcToOpenApiFormat(pk.jdbcType)
+                    val oaType = jdbcToOpenApiType(pk.type)
+                    val oaFormat = jdbcToOpenApiFormat(pk.type)
                     val oaIdPathParameter = PathParameter()
                             .name(pk.name)
                             .description(pk.name)
@@ -254,8 +254,8 @@ class OpenApiMetadataServiceImpl(private val databaseMetadataService: DatabaseMe
     private data class PathsAndComponents(val paths: Paths, val components: Components)
 }
 
-private fun jdbcToOpenApiType(jdbcType: JDBCType): String {
-    return when (jdbcType.name.toLowerCase()) {
+private fun jdbcToOpenApiType(jdbcType: String): String {
+    return when (jdbcType.toLowerCase()) {
         "text", "bytea", "varchar", "binary", "date", "timestamp", "timestamptz", "json", "jsonb", "uuid" -> "string"
 
         "int4", "int8", "integer", "bigint", "serial", "bigserial" -> "integer"
@@ -264,12 +264,12 @@ private fun jdbcToOpenApiType(jdbcType: JDBCType): String {
 
         "bool", "bit" -> "boolean"
 
-        else -> jdbcType.name
+        else -> jdbcType
     }
 }
 
-private fun jdbcToOpenApiFormat(jdbcType: JDBCType): String? {
-    return when (jdbcType.name.toLowerCase()) {
+private fun jdbcToOpenApiFormat(jdbcType: String): String? {
+    return when (jdbcType.toLowerCase()) {
         "int4", "serial", "int" -> "int32"
 
         "int8", "bigserial", "bigint" -> "int64"
