@@ -17,6 +17,7 @@ package xyz.kosmonaffft.dbrestr.metadata
 data class ColumnMetadata(
         val name: String,
         val type: String,
+        val sqlType: Int,
         val nullable: Boolean,
         val autoIncremented: Boolean,
         val comment: String?

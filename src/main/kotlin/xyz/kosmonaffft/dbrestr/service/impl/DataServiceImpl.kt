@@ -14,6 +14,7 @@
 
 package xyz.kosmonaffft.dbrestr.service.impl
 
+import org.springframework.jdbc.core.ColumnMapRowMapper
 import org.springframework.jdbc.core.JdbcTemplate
 import xyz.kosmonaffft.dbrestr.metadata.ColumnMetadata
 import xyz.kosmonaffft.dbrestr.service.api.DataService
@@ -58,11 +59,15 @@ class DataServiceImpl(private val dataSource: DataSource,
 
         val template = JdbcTemplate(dataSource)
 
-        val args = idColumnsNames.map {
-            parsedId[it]
-        }
+        val args: Array<Any> = idColumnsNames.map {
+            parsedId[it]!!
+        }.toTypedArray()
 
-        return template.queryForMap(sql, args)
+        val argsTypes: IntArray = idColumnsNames.mapIndexed { i, _ ->
+            columnsMetadata.primaryKeys[i].sqlType
+        }.toIntArray()
+
+        return template.queryForMap(sql, args, argsTypes)
     }
 }
 
