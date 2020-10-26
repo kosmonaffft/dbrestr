@@ -21,4 +21,6 @@ interface DataService {
     fun selectMany(schema: String, table: String, page: Long, size: Long): SelectManyResult
 
     fun selectOne(schema: String, table: String, id: String): Map<String, Any>
+
+    fun delete(schema: String, table: String, id: String)
 }

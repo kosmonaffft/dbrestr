@@ -14,10 +14,8 @@
 
 package xyz.kosmonaffft.dbrestr.rest
 
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.*
 import xyz.kosmonaffft.dbrestr.service.api.DataService
 import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.PAGE_PARAMETER_NAME
 import xyz.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.PAGE_SIZE_PARAMETER_NAME
@@ -46,5 +44,15 @@ class DataRestHandler(private val dataService: DataService) {
 
         val result = dataService.selectOne(schema, table, ids)
         return result
+    }
+
+    @DeleteMapping(path = ["/data/{schema}/{table}/{ids}"])
+    fun delete(@PathVariable("schema") schema: String,
+               @PathVariable("table") table: String,
+               @PathVariable("ids") ids: String,
+               response: HttpServletResponse) {
+
+        dataService.delete(schema, table, ids)
+        response.status = HttpStatus.NO_CONTENT.value();
     }
 }

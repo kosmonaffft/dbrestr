@@ -14,7 +14,6 @@
 
 package xyz.kosmonaffft.dbrestr.service.impl
 
-import org.springframework.jdbc.core.ColumnMapRowMapper
 import org.springframework.jdbc.core.JdbcTemplate
 import xyz.kosmonaffft.dbrestr.metadata.ColumnMetadata
 import xyz.kosmonaffft.dbrestr.service.api.DataService
@@ -49,15 +48,30 @@ class DataServiceImpl(private val dataSource: DataSource,
     }
 
     override fun selectOne(schema: String, table: String, id: String): Map<String, Any> {
+        val (sql, args, argsTypes) = prepareCallWithId(schema, table, id) { s, t, i -> sqlService.selectOne(s, t, i) }
+        val template = JdbcTemplate(dataSource)
+        val result = doWithJdbc(sql, args, argsTypes) { s, a, t -> template.queryForMap(s, a, t) }
+        return result
+    }
+
+    override fun delete(schema: String, table: String, id: String) {
+        val (sql, args, argsTypes) = prepareCallWithId(schema, table, id) { s, t, i -> sqlService.delete(s, t, i) }
+        val template = JdbcTemplate(dataSource)
+        doWithJdbc(sql, args, argsTypes) { s, a, t -> template.update(s, a, t) }
+    }
+
+    private fun prepareCallWithId(schema: String,
+                                  table: String,
+                                  id: String,
+                                  sqlCreator: (String, String, List<String>) -> String): Triple<String, Array<Any>, IntArray> {
+
         val metaData = databaseMetadataService.getDatabaseMetadata()
         val columnsMetadata = metaData[schema]!![table]!!
         val primaryKeysMetadata = columnsMetadata.primaryKeys
 
         val idColumnsNames = primaryKeysMetadata.map { it.name }
-        val sql = sqlService.selectOne(schema, table, idColumnsNames)
+        val sql = sqlCreator(schema, table, idColumnsNames)
         val parsedId = parseId(primaryKeysMetadata, id)
-
-        val template = JdbcTemplate(dataSource)
 
         val args: Array<Any> = idColumnsNames.map {
             parsedId[it]!!
@@ -67,8 +81,12 @@ class DataServiceImpl(private val dataSource: DataSource,
             columnsMetadata.primaryKeys[i].sqlType
         }.toIntArray()
 
-        return template.queryForMap(sql, args, argsTypes)
+        return Triple(sql, args, argsTypes)
     }
+}
+
+private fun <T> doWithJdbc(sql: String, args: Array<Any>, argsTypes: IntArray, executor: (String, Array<Any>, IntArray) -> T): T {
+    return executor(sql, args, argsTypes)
 }
 
 private val DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd")
