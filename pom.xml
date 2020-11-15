@@ -10,7 +10,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>xyz.kosmonaffft</groupId>
+    <groupId>space.kosmonaffft</groupId>
     <artifactId>dbrestr</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>dbrestr</name>
@@ -110,9 +110,6 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <executable>true</executable>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
