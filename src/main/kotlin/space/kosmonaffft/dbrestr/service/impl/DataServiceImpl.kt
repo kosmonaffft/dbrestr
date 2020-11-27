@@ -25,7 +25,8 @@ import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.util.*
+import java.util.Collections
+import java.util.UUID
 import java.util.regex.Pattern
 import javax.sql.DataSource
 
@@ -58,6 +59,37 @@ class DataServiceImpl(private val dataSource: DataSource,
         val (sql, args, argsTypes) = prepareCallWithId(schema, table, id) { s, t, i -> sqlService.delete(s, t, i) }
         val template = JdbcTemplate(dataSource)
         doWithJdbc(sql, args, argsTypes) { s, a, t -> template.update(s, a, t) }
+    }
+
+    override fun insert(schema: String, table: String, record: Map<String, Any>): Map<String, Any> {
+        val (sql, args, argsTypes) = prepareInsertCall(schema, table, record) { s, t -> sqlService.insert(s, t, record.keys) }
+        val template = JdbcTemplate(dataSource)
+        doWithJdbc(sql, args, argsTypes) { s, a, t -> template.update(s, a, t) }
+    }
+
+    override fun update(schema: String, table: String, ids: String, record: Map<String, Any>): Map<String, Any> {
+        TODO("Not yet implemented")
+    }
+
+    private fun prepareInsertCall(schema: String,
+                                  table: String,
+                                  record: Map<String, Any>,
+                                  sqlCreator: (String, String) -> String): Triple<String, Array<Any>, IntArray> {
+
+        val metaData = databaseMetadataService.getDatabaseMetadata()
+        val columnsMetadata = metaData[schema]!![table]!!.allColumns
+
+        val sql = sqlCreator(schema, table)
+
+        val args: Array<Any> = columnsMetadata.map {
+            record.getValue(it.name)
+        }.toTypedArray()
+
+        val argsTypes: IntArray = columnsMetadata.map {
+            it.sqlType
+        }.toIntArray()
+
+        return Triple(sql, args, argsTypes)
     }
 
     private fun prepareCallWithId(schema: String,

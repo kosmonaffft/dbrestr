@@ -15,7 +15,14 @@
 package space.kosmonaffft.dbrestr.rest
 
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 import space.kosmonaffft.dbrestr.service.api.DataService
 import space.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.PAGE_PARAMETER_NAME
 import space.kosmonaffft.dbrestr.service.api.OpenApiMetadataService.Companion.PAGE_SIZE_PARAMETER_NAME
@@ -43,6 +50,25 @@ class DataRestHandler(private val dataService: DataService) {
                   @PathVariable("ids") ids: String): Map<String, Any> {
 
         val result = dataService.selectOne(schema, table, ids)
+        return result
+    }
+
+    @PostMapping(path = ["/data/{schema}/{table}"], produces = ["application/json"])
+    fun insert(@PathVariable("schema") schema: String,
+               @PathVariable("table") table: String,
+               @RequestBody record: Map<String, Any>): Map<String, Any> {
+
+        val result = dataService.insert(schema, table, record)
+        return result
+    }
+
+    @PutMapping(path = ["/data/{schema}/{table}/{ids}"], produces = ["application/json"])
+    fun update(@PathVariable("schema") schema: String,
+               @PathVariable("table") table: String,
+               @PathVariable("ids") ids: String,
+               @RequestBody record: Map<String, Any>): Map<String, Any> {
+
+        val result = dataService.update(schema, table, ids, record)
         return result
     }
 

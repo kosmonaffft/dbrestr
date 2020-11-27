@@ -15,12 +15,13 @@
 package space.kosmonaffft.dbrestr.service.impl
 
 import space.kosmonaffft.dbrestr.metadata.DatabaseMetadata
+import space.kosmonaffft.dbrestr.service.api.DatabaseMetadataService
 import space.kosmonaffft.dbrestr.service.api.SqlService
 import java.lang.String.join
 import java.util.Collections.nCopies
 import java.util.stream.Collectors
 
-class SqlServiceImpl : SqlService {
+class SqlServiceImpl(private val databaseMetadataService: DatabaseMetadataService) : SqlService {
 
     override fun selectMany(schema: String, table: String, offset: Long, limit: Long): String {
         val sql = StringBuilder()
@@ -57,8 +58,9 @@ class SqlServiceImpl : SqlService {
         return "SELECT * FROM $schema.$table WHERE $where;"
     }
 
-    override fun insert(schema: String, table: String, databaseMetadata: DatabaseMetadata, actualColumns: Set<String>): String {
-        val columnsList = databaseMetadata[schema]!![table]!!.allColumns.stream()
+    override fun insert(schema: String, table: String, actualColumns: Set<String>): String {
+        val metaData = databaseMetadataService.getDatabaseMetadata()
+        val columnsList = metaData[schema]!![table]!!.allColumns.stream()
                 .map { it.name }
                 .filter { actualColumns.contains(it) }
                 .collect(joiningCollector())

@@ -23,4 +23,8 @@ interface DataService {
     fun selectOne(schema: String, table: String, id: String): Map<String, Any>
 
     fun delete(schema: String, table: String, id: String)
+
+    fun insert(schema: String, table: String, record: Map<String, Any>): Map<String, Any>
+
+    fun update(schema: String, table: String, ids: String, record: Map<String, Any>): Map<String, Any>
 }

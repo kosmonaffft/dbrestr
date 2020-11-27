@@ -24,7 +24,7 @@ interface SqlService {
 
     fun selectOne(schema: String, table: String, idColumns: List<String>): String
 
-    fun insert(schema: String, table: String, databaseMetadata: DatabaseMetadata, actualColumns: Set<String>): String
+    fun insert(schema: String, table: String, actualColumns: Set<String>): String
 
     fun update(schema: String, table: String, idColumns: List<String>, databaseMetadata: DatabaseMetadata, actualColumns: Set<String>): String
 
