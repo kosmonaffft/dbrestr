@@ -44,8 +44,8 @@ class DBrestrApplication {
     }
 
     @Bean
-    fun sqlService(): SqlService {
-        return SqlServiceImpl()
+    fun sqlService(databaseMetadataService: DatabaseMetadataService): SqlService {
+        return SqlServiceImpl(databaseMetadataService)
     }
 
     @Bean

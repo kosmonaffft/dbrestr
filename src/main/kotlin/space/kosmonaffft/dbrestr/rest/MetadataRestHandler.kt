@@ -23,13 +23,13 @@ import space.kosmonaffft.dbrestr.service.api.OpenApiMetadataService
 @RestController
 class MetadataRestHandler(private val openApiMetadataService: OpenApiMetadataService) {
 
-    @GetMapping(path = ["/metadata/yaml"], produces = ["text/yaml"])
+    @GetMapping(path = ["/openapi.yaml"], produces = ["text/yaml"])
     fun getYamlMetadata(): String {
         val openAPI = openApiMetadataService.generateOpenApiV3Metadata()
         return Yaml.pretty(openAPI)
     }
 
-    @GetMapping(path = ["/metadata/json"], produces = ["application/json"])
+    @GetMapping(path = ["/openapi.json"], produces = ["application/json"])
     fun getJsonMetadata(): String {
         val openAPI = openApiMetadataService.generateOpenApiV3Metadata()
         return Json.pretty(openAPI)

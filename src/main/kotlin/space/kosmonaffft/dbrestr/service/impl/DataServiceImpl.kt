@@ -64,7 +64,10 @@ class DataServiceImpl(private val dataSource: DataSource,
     override fun insert(schema: String, table: String, record: Map<String, Any>): Map<String, Any> {
         val (sql, args, argsTypes) = prepareInsertCall(schema, table, record) { s, t -> sqlService.insert(s, t, record.keys) }
         val template = JdbcTemplate(dataSource)
-        doWithJdbc(sql, args, argsTypes) { s, a, t -> template.update(s, a, t) }
+        return doWithJdbc(sql, args, argsTypes) { s, a, t ->
+            template.update(s, a, t)
+            record
+        }
     }
 
     override fun update(schema: String, table: String, ids: String, record: Map<String, Any>): Map<String, Any> {
@@ -81,11 +84,15 @@ class DataServiceImpl(private val dataSource: DataSource,
 
         val sql = sqlCreator(schema, table)
 
-        val args: Array<Any> = columnsMetadata.map {
+        val args: Array<Any> = columnsMetadata.filter {
+            record.containsKey(it.name)
+        }.map {
             record.getValue(it.name)
         }.toTypedArray()
 
-        val argsTypes: IntArray = columnsMetadata.map {
+        val argsTypes: IntArray = columnsMetadata.filter {
+            record.containsKey(it.name)
+        }.map {
             it.sqlType
         }.toIntArray()
 
