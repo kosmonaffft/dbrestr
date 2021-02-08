@@ -1,4 +1,4 @@
-//  Copyright 2019-2020 Anton V. Kirilchik <kosmonaffft@gmail.com>
+//  Copyright 2019-2021 Anton V. Kirilchik <kosmonaffft@gmail.com>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -14,13 +14,17 @@
 
 package space.kosmonaffft.dbrestr.service.impl
 
+import org.springframework.jdbc.core.ArgumentTypePreparedStatementSetter
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.jdbc.core.PreparedStatementCreator
+import org.springframework.jdbc.support.GeneratedKeyHolder
 import space.kosmonaffft.dbrestr.metadata.ColumnMetadata
 import space.kosmonaffft.dbrestr.service.api.DataService
 import space.kosmonaffft.dbrestr.service.api.DatabaseMetadataService
 import space.kosmonaffft.dbrestr.service.api.SqlService
 import java.math.BigDecimal
 import java.sql.Date
+import java.sql.Statement
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.time.OffsetDateTime
@@ -30,9 +34,11 @@ import java.util.UUID
 import java.util.regex.Pattern
 import javax.sql.DataSource
 
-class DataServiceImpl(private val dataSource: DataSource,
-                      private val sqlService: SqlService,
-                      private val databaseMetadataService: DatabaseMetadataService) : DataService {
+class DataServiceImpl(
+    private val dataSource: DataSource,
+    private val sqlService: SqlService,
+    private val databaseMetadataService: DatabaseMetadataService
+) : DataService {
 
     override fun selectMany(schema: String, table: String, page: Long, size: Long): DataService.SelectManyResult {
         val selectScript = sqlService.selectMany(schema, table, page * size, (page + 1) * size)
@@ -62,22 +68,38 @@ class DataServiceImpl(private val dataSource: DataSource,
     }
 
     override fun insert(schema: String, table: String, record: Map<String, Any>): Map<String, Any> {
-        val (sql, args, argsTypes) = prepareInsertCall(schema, table, record) { s, t -> sqlService.insert(s, t, record.keys) }
-        val template = JdbcTemplate(dataSource)
-        return doWithJdbc(sql, args, argsTypes) { s, a, t ->
-            template.update(s, a, t)
-            record
+        val (sql, args, argsTypes) = prepareInsertCall(schema, table, record) { s, t ->
+            sqlService.insert(
+                s,
+                t,
+                record.keys
+            )
         }
+        val template = JdbcTemplate(dataSource)
+        val inserted = doWithJdbc(sql, args, argsTypes) { s, a, t ->
+            val setter = ArgumentTypePreparedStatementSetter(args, argsTypes)
+            val creator = PreparedStatementCreator {
+                val stmt = it.prepareStatement(s, Statement.RETURN_GENERATED_KEYS)
+                setter.setValues(stmt)
+                stmt
+            }
+            val holder = GeneratedKeyHolder()
+            template.update(creator, holder)
+            holder.keys
+        }
+        return inserted!!
     }
 
     override fun update(schema: String, table: String, ids: String, record: Map<String, Any>): Map<String, Any> {
         TODO("Not yet implemented")
     }
 
-    private fun prepareInsertCall(schema: String,
-                                  table: String,
-                                  record: Map<String, Any>,
-                                  sqlCreator: (String, String) -> String): Triple<String, Array<Any>, IntArray> {
+    private fun prepareInsertCall(
+        schema: String,
+        table: String,
+        record: Map<String, Any>,
+        sqlCreator: (String, String) -> String
+    ): Triple<String, Array<Any>, IntArray> {
 
         val metaData = databaseMetadataService.getDatabaseMetadata()
         val columnsMetadata = metaData[schema]!![table]!!.allColumns
@@ -99,10 +121,12 @@ class DataServiceImpl(private val dataSource: DataSource,
         return Triple(sql, args, argsTypes)
     }
 
-    private fun prepareCallWithId(schema: String,
-                                  table: String,
-                                  id: String,
-                                  sqlCreator: (String, String, List<String>) -> String): Triple<String, Array<Any>, IntArray> {
+    private fun prepareCallWithId(
+        schema: String,
+        table: String,
+        id: String,
+        sqlCreator: (String, String, List<String>) -> String
+    ): Triple<String, Array<Any>, IntArray> {
 
         val metaData = databaseMetadataService.getDatabaseMetadata()
         val columnsMetadata = metaData[schema]!![table]!!
@@ -124,11 +148,17 @@ class DataServiceImpl(private val dataSource: DataSource,
     }
 }
 
-private fun <T> doWithJdbc(sql: String, args: Array<Any>, argsTypes: IntArray, executor: (String, Array<Any>, IntArray) -> T): T {
+private fun <T> doWithJdbc(
+    sql: String,
+    args: Array<Any>,
+    argsTypes: IntArray,
+    executor: (String, Array<Any>, IntArray) -> T
+): T {
     return executor(sql, args, argsTypes)
 }
 
 private val DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd")
+
 private val DIGIT_PATTERN = Pattern.compile("[0-9]+")
 
 private fun parseId(primaryKeyMetadata: List<ColumnMetadata>, id: String): MutableMap<String, Any> {
